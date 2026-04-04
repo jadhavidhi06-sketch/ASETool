@@ -1,0 +1,17 @@
+# Core dependencies
+requests>=2.28.0
+beautifulsoup4>=4.11.1
+dnspython>=2.2.1
+python-whois>=0.7.3
+lxml>=4.9.0
+
+# Machine Learning
+scikit-learn>=1.2.0
+numpy>=1.24.0
+
+# Optional for API integrations
+shodan>=1.28.0
+censys>=2.2.0
+
+# For advanced features
+pandas>=1.5.0
