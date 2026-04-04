@@ -1,257 +1,508 @@
-# ASETool
-Advanced Social Engineering Tool
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASERecon v3.0 - Advanced CLI Security Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
 
-╔═══════════════════════════════════════════════════════════════════════════════╗
-║                    ASERecon v3.0 - User Manual                                ║
-║                  Advanced CLI Security Tool                                   ║
-╚═══════════════════════════════════════════════════════════════════════════════╝
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-TABLE OF CONTENTS
-=================
-1. Introduction
-2. Installation
-3. Quick Start
-4. Command Line Options
-5. Scan Modules Explained
-6. Shodan Integration
-7. Output and Reporting
-8. Examples
-9. Troubleshooting
-10. Legal and Ethical Guidelines
-11. Frequently Asked Questions
+        /* Header Section */
+        .header {
+            text-align: center;
+            padding: 50px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
 
-═══════════════════════════════════════════════════════════════════════════════
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1%, transparent 1%);
+            background-size: 50px 50px;
+            animation: shimmer 20s linear infinite;
+        }
 
-1. INTRODUCTION
-===============
-ASERecon (Advanced Social Engineering Reconnaissance) is a comprehensive CLI-based
-security assessment tool designed for authorized penetration testers, security
-researchers, and system administrators. It performs extensive OSINT gathering,
-vulnerability detection, and risk assessment without requiring extensive API keys
-(except optional Shodan integration).
+        @keyframes shimmer {
+            0% { transform: translate(0,0); }
+            100% { transform: translate(50px,50px); }
+        }
 
-Key Features:
-• DNS enumeration (A, MX, NS, TXT, SOA, CNAME records)
-• WHOIS domain registration lookup
-• Subdomain discovery via certificate transparency and brute force
-• Email security analysis (SPF, DMARC, MX records)
-• Technology stack detection (web servers, frameworks, CMS)
-• Shodan integration for vulnerability and port scanning
-• Wayback Machine historical archives
-• Security headers analysis
-• Automated email extraction from web pages
-• Risk scoring and remediation recommendations
-• JSON output for further analysis
+        .logo {
+            font-size: 60px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 1;
+        }
 
-═══════════════════════════════════════════════════════════════════════════════
+        .tagline {
+            font-size: 20px;
+            margin-top: 10px;
+            color: rgba(255,255,255,0.9);
+            position: relative;
+            z-index: 1;
+        }
 
-2. INSTALLATION
-===============
+        .version {
+            display: inline-block;
+            background: rgba(0,0,0,0.3);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-top: 15px;
+            position: relative;
+            z-index: 1;
+        }
 
-Prerequisites:
-• Python 3.7 or higher
-• pip package manager
+        /* Warning Banner */
+        .warning-banner {
+            background: linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 5px solid #ffd700;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            animation: pulse 2s infinite;
+        }
 
-Step 1: Install required Python packages
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.01); }
+        }
 
-pip install requests beautifulsoup4 dnspython python-whois
+        .warning-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-Optional for Shodan integration:
-pip install shodan
+        .warning-title::before {
+            content: "⚠️";
+            font-size: 30px;
+        }
 
-Step 2: Download the tool
+        .warning-text {
+            font-size: 16px;
+            line-height: 1.8;
+        }
 
-Save the asetool.py script to your preferred directory.
+        .legal-list {
+            margin-top: 15px;
+            padding-left: 25px;
+        }
 
-Step 3: Make executable (Linux/Mac)
+        .legal-list li {
+            margin: 10px 0;
+        }
 
-chmod +x asetool.py
+        /* Badges */
+        .badges {
+            text-align: center;
+            margin-bottom: 30px;
+        }
 
-Step 4: Test installation
+        .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin: 5px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+        }
 
-python asetool.py -h
+        /* Feature Grid */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
 
-═══════════════════════════════════════════════════════════════════════════════
+        .feature-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 25px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
 
-3. QUICK START
-==============
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+            background: rgba(255,255,255,0.08);
+        }
 
-Basic scan (no API key):
-python asetool.py -t example.com
+        .feature-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
 
-Full scan with Shodan:
-python asetool.py -t example.com -s YOUR_SHODAN_API_KEY
+        .feature-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
 
-Verbose scan with custom output:
-python asetool.py -t example.com -s API_KEY -v -o my_results.json
+        .feature-desc {
+            font-size: 14px;
+            color: #b0b0b0;
+        }
 
-Quick scan without saving:
-python asetool.py -t example.com --no-save
+        /* Installation Section */
+        .section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
 
-═══════════════════════════════════════════════════════════════════════════════
+        .section-title {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #667eea;
+            border-left: 4px solid #667eea;
+            padding-left: 15px;
+        }
 
-4. COMMAND LINE OPTIONS
-=======================
+        .code-block {
+            background: #0a0e27;
+            border-radius: 10px;
+            padding: 20px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            border-left: 3px solid #667eea;
+        }
 
-Required Arguments:
-┌─────────────────┬────────────────────────────────────────────────┐
-│ Option          │ Description                                    │
-├─────────────────┼────────────────────────────────────────────────┤
-│ -t, --target    │ Target domain or IP address to scan           │
-│                 │ Example: example.com, 192.168.1.1             │
-└─────────────────┴────────────────────────────────────────────────┘
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+        }
 
-Optional Arguments:
-┌─────────────────┬────────────────────────────────────────────────┐
-│ Option          │ Description                                    │
-├─────────────────┼────────────────────────────────────────────────┤
-│ -s, --shodan    │ Shodan API key for enhanced scanning          │
-│ -v, --verbose   │ Enable detailed output messages                │
-│ -o, --output    │ Save results to custom filename                │
-│ --no-save       │ Disable automatic result saving                │
-│ -h, --help      │ Display detailed help information              │
-└─────────────────┴────────────────────────────────────────────────┘
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
 
-═══════════════════════════════════════════════════════════════════════════════
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
 
-5. SCAN MODULES EXPLAINED
-=========================
+        th {
+            background: rgba(102, 126, 234, 0.3);
+            font-weight: bold;
+            color: #667eea;
+        }
 
-5.1 DNS Information
-───────────────────
-Retrieves all available DNS records for the target domain:
-• A/AAAA records (IPv4/IPv6 addresses)
-• MX records (mail servers)
-• NS records (name servers)
-• TXT records (including SPF)
-• SOA records (zone authority)
-• CNAME records (aliases)
-• Reverse DNS lookup
+        tr:hover {
+            background: rgba(255,255,255,0.03);
+        }
 
-5.2 WHOIS Lookup
-────────────────
-Extracts domain registration information:
-• Registrar name
-• Organization/registrant
-• Creation and expiration dates
-• Name servers
-• Country of registration
-• Contact emails
+        /* Command Line Simulation */
+        .terminal {
+            background: #000;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+        }
 
-5.3 Subdomain Discovery
-──────────────────────
-Finds subdomains using two methods:
-• Certificate Transparency logs (crt.sh)
-• Common subdomain brute force (100+ common names)
+        .terminal-line {
+            color: #0f0;
+            margin: 5px 0;
+        }
 
-5.4 Email Security Analysis
-──────────────────────────
-Evaluates email security posture:
-• MX record verification
-• SPF record presence and content
-• DMARC record detection
-• Email spoofing vulnerability assessment
+        .terminal-prompt {
+            color: #0f0;
+        }
 
-5.5 Technology Stack Detection
-─────────────────────────────
-Identifies technologies in use:
-• Web servers (Apache, Nginx, IIS)
-• Programming frameworks (React, Angular, Vue)
-• Content Management Systems (WordPress, Drupal)
-• Security headers configuration
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            margin-top: 40px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 14px;
+            color: #888;
+        }
 
-5.6 Shodan Integration (Optional)
-────────────────────────────────
-Requires API key - provides:
-• Open port enumeration
-• Service detection
-• Known vulnerability identification (CVEs)
-• Organization and ISP information
-• Geographic location
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            margin: 10px;
+            transition: transform 0.3s;
+            font-weight: bold;
+        }
 
-5.7 Wayback Machine Archive
-──────────────────────────
-Checks historical records:
-• Archived website snapshots
-• Historical timestamps
-• Content change tracking
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
 
-5.8 Security Headers Analysis
-────────────────────────────
-Checks for critical security headers:
-• HSTS (Strict-Transport-Security)
-• CSP (Content-Security-Policy)
-• X-Frame-Options
-• X-Content-Type-Options
-• Referrer-Policy
-• X-XSS-Protection
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #667eea;
+        }
 
-5.9 Email Extraction
-───────────────────
-Extracts email addresses from:
-• Main website page
-• Common pages (/contact, /about, /team)
-• Pattern-based regex matching
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 30px;
+            }
+            .tagline {
+                font-size: 16px;
+            }
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
 
-5.10 Risk Assessment
-───────────────────
-Automated evaluation including:
-• Risk scoring (0-100)
-• Risk level classification
-• Key findings summary
-• Prioritized recommendations
-• Remediation steps
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
 
-═══════════════════════════════════════════════════════════════════════════════
+        ::-webkit-scrollbar-track {
+            background: #1a1f3a;
+        }
 
-6. SHODAN INTEGRATION
-=====================
+        ::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 5px;
+        }
 
-Getting a Shodan API Key:
-1. Visit https://account.shodan.io/register
-2. Create a free account
-3. Navigate to your API key section
-4. Copy your API key
+        ::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <span style="color: #ff6b6b;">█</span>ASERecon<span style="color: #ff6b6b;">█</span>
+            </div>
+            <div class="tagline">Advanced CLI Security Tool - Social Engineering Reconnaissance & OSINT Suite</div>
+            <div class="version">Version 3.0 | Released 2024</div>
+        </div>
 
-Free Tier Limitations:
-• 1 query per second rate limit
-• Limited result detail
-• Sufficient for most assessments
+        <!-- Warning Banner -->
+        <div class="warning-banner">
+            <div class="warning-title">EDUCATIONAL PURPOSE ONLY</div>
+            <div class="warning-text">
+                <strong>⚠️ CRITICAL LEGAL NOTICE ⚠️</strong><br><br>
+                This tool is designed <strong>SOLELY</strong> for:
+                <ul class="legal-list">
+                    <li>✓ Authorized penetration testing with written permission</li>
+                    <li>✓ Educational security research in controlled environments</li>
+                    <li>✓ System administrators auditing their own infrastructure</li>
+                    <li>✓ Security awareness training and demonstrations</li>
+                </ul>
+                <strong>You MUST have EXPLICIT WRITTEN AUTHORIZATION before using this tool on any system you do not own.</strong><br><br>
+                <span style="color: #ffd700;">Unauthorized use may violate:</span> Computer Fraud and Abuse Act (CFAA), GDPR, HIPAA, PCI DSS, and other applicable laws.
+                Violators may face CRIMINAL PROSECUTION, FINES, and IMPRISONMENT.
+            </div>
+        </div>
 
-What Shodan Provides:
-• Open ports and services
-• Known vulnerabilities (CVEs)
-• Historical data
-• Banner grabbing
-• Geographic information
+        <!-- Badges -->
+        <div class="badges">
+            <span class="badge">🔒 Security Testing</span>
+            <span class="badge">🛡️ OSINT</span>
+            <span class="badge">🎯 Reconnaissance</span>
+            <span class="badge">⚡ Fast & Lightweight</span>
+            <span class="badge">🐍 Python 3.7+</span>
+            <span class="badge">📊 CLI Based</span>
+        </div>
 
-Without Shodan:
-The tool still performs comprehensive OSINT using API-free sources:
-• DNS enumeration
-• Certificate transparency logs
-• WHOIS databases
-• Public web scraping
+        <!-- Quick Actions -->
+        <div style="text-align: center; margin-bottom: 30px;">
+            <a href="#installation" class="btn">📥 Installation</a>
+            <a href="#usage" class="btn btn-outline">🚀 Quick Start</a>
+            <a href="#examples" class="btn btn-outline">💡 Examples</a>
+            <a href="manual.txt" class="btn btn-outline">📖 Full Manual</a>
+        </div>
 
-═══════════════════════════════════════════════════════════════════════════════
+        <!-- Features Grid -->
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <div class="feature-title">DNS Enumeration</div>
+                <div class="feature-desc">Complete DNS record retrieval including A, MX, NS, TXT, SOA, CNAME records with reverse DNS lookup.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🌐</div>
+                <div class="feature-title">Subdomain Discovery</div>
+                <div class="feature-desc">Certificate transparency logs + 100+ common subdomain brute force enumeration.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📧</div>
+                <div class="feature-title">Email Security</div>
+                <div class="feature-desc">SPF, DMARC, MX analysis with email spoofing vulnerability assessment.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🛠️</div>
+                <div class="feature-title">Tech Stack Detection</div>
+                <div class="feature-desc">Identify web servers, frameworks, CMS platforms, and security headers.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔓</div>
+                <div class="feature-title">Shodan Integration</div>
+                <div class="feature-desc">Optional Shodan API for open ports, vulnerabilities (CVEs), and service enumeration.</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <div class="feature-title">Risk Assessment</div>
+                <div class="feature-desc">Automated risk scoring (0-100) with prioritized remediation recommendations.</div>
+            </div>
+        </div>
 
-7. OUTPUT AND REPORTING
-=======================
+        <!-- Installation Section -->
+        <div id="installation" class="section">
+            <h2 class="section-title">📦 Installation</h2>
+            
+            <h3>Prerequisites</h3>
+            <ul style="margin: 15px 0 15px 25px;">
+                <li>Python 3.7 or higher</li>
+                <li>pip package manager</li>
+                <li>Internet connection for API calls</li>
+            </ul>
 
-Console Output
-──────────────
-Real-time color-coded output showing:
-• Scan progress indicators
-• Discovered information
-• Warnings and errors
-• Risk assessment summary
-• Final recommendations
+            <h3>Quick Install</h3>
+            <div class="code-block">
+                <span style="color: #0f0;">$</span> git clone https://github.com/yourusername/aserecon.git<br>
+                <span style="color: #0f0;">$</span> cd aserecon<br>
+                <span style="color: #0f0;">$</span> pip install -r requirements.txt<br>
+                <span style="color: #0f0;">$</span> python asetool.py -h
+            </div>
 
-JSON Output File
-────────────────
-Default filename: aserecon_<target>_<timestamp>.json
+            <h3>Requirements</h3>
+            <div class="code-block">
+                requests>=2.28.0<br>
+                beautifulsoup4>=4.11.1<br>
+                dnspython>=2.2.1<br>
+                python-whois>=0.7.3<br>
+                shodan>=1.28.0  # Optional for Shodan integration
+            </div>
+        </div>
 
-Structure:
+        <!-- Usage Section -->
+        <div id="usage" class="section">
+            <h2 class="section-title">🚀 Usage</h2>
+            
+            <div class="terminal">
+                <div class="terminal-line"><span class="terminal-prompt">$</span> python asetool.py -t example.com</div>
+                <div class="terminal-line"><span class="terminal-prompt">$</span> python asetool.py -t example.com -s YOUR_SHODAN_API_KEY</div>
+                <div class="terminal-line"><span class="terminal-prompt">$</span> python asetool.py -t example.com -v</div>
+                <div class="terminal-line"><span class="terminal-prompt">$</span> python asetool.py -t example.com --no-save</div>
+                <div class="terminal-line"><span class="terminal-prompt">$</span> python asetool.py -h</div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Option</th><th>Description</th><th>Example</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>-t, --target</code></td><td>Target domain or IP</td><td>example.com</td></tr>
+                        <tr><td><code>-s, --shodan</code></td><td>Shodan API key</td><td>YOUR_API_KEY</td></tr>
+                        <tr><td><code>-v, --verbose</code></td><td>Verbose output</td><td>-v</td></tr>
+                        <tr><td><code>-o, --output</code></td><td>Custom output file</td><td>-o results.json</td></tr>
+                        <tr><td><code>--no-save</code></td><td>Disable file saving</td><td>--no-save</td></tr>
+                        <tr><td><code>-h, --help</code></td><td>Show help</td><td>-h</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Examples Section -->
+        <div id="examples" class="section">
+            <h2 class="section-title">💡 Examples</h2>
+            
+            <h3>Basic Reconnaissance</h3>
+            <div class="code-block">
+                <span style="color: #0f0;">$</span> python asetool.py -t example.com
+            </div>
+            <p>Performs: DNS, WHOIS, subdomains, email security, technology detection, security headers, email extraction, risk assessment</p>
+
+            <h3>Full Scan with Shodan</h3>
+            <div class="code-block">
+                <span style="color: #0f0;">$</span> python asetool.py -t example.com -s YOUR_SHODAN_API_KEY -v
+            </div>
+            <p>Adds: Open port scanning, vulnerability detection, service enumeration, geographic information</p>
+
+            <h3>Quick Assessment</h3>
+            <div class="code-block">
+                <span style="color: #0f0;">$</span> python asetool.py -t example.com --no-save
+            </div>
+            <p>Runs full scan but saves no files to disk</p>
+
+            <h3>Custom Output Location</h3>
+            <div class="code-block">
+                <span style="color: #0f0;">$</span> python asetool.py -t example.com -o /path/to/results.json
+            </div>
+        </div>
+
+        <!-- Output Section -->
+        <div class="section">
+            <h2 class="section-title">📊 Output & Reporting</h2>
+            
+            <h3>Console Output</h3>
+            <p>Real-time color-coded output showing:</p>
+            <ul style="margin: 10px 0 10px 25px;">
+                <li>✓ Scan progress indicators</li>
+                <li>✓ Discovered information with color coding</li>
+                <li>✓ Warnings and errors</li>
+                <li>✓ Risk assessment summary</li>
+                <li>✓ Prioritized recommendations</li>
+            </ul>
+
+            <h3>JSON Output Structure</h3>
+            <div class="code-block">
 {
   "target": "example.com",
   "timestamp": "2024-01-15T10:30:00",
@@ -262,244 +513,183 @@ Structure:
     "email_patterns": {...},
     "technologies": [...],
     "shodan": {...},
-    "archive": {...},
     "security_headers": {...},
     "emails_found": [...],
-    "risk_assessment": {...}
+    "risk_assessment": {
+      "score": 45,
+      "level": "MEDIUM",
+      "findings": [...],
+      "recommendations": [...]
+    }
   }
 }
+            </div>
+        </div>
 
-Custom Output:
-Use -o filename.json to specify custom output path
-Use --no-save to disable file creation
+        <!-- Risk Assessment Section -->
+        <div class="section">
+            <h2 class="section-title">🎯 Risk Scoring System</h2>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Score Range</th><th>Risk Level</th><th>Action Required</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>0-20</td><td style="color: #4caf50;">LOW</td><td>Continue monitoring</td></tr>
+                        <tr><td>21-40</td><td style="color: #8bc34a;">LOW-MEDIUM</td><td>Review recommendations</td></tr>
+                        <tr><td>41-60</td><td style="color: #ff9800;">MEDIUM</td><td>Implement security improvements</td></tr>
+                        <tr><td>61-80</td><td style="color: #f44336;">HIGH</td><td>Urgent action required</td></tr>
+                        <tr><td>81-100</td><td style="color: #d32f2f;">CRITICAL</td><td>Immediate remediation needed</td></tr>
+                    </tbody>
+                </table>
+            </div>
 
-═══════════════════════════════════════════════════════════════════════════════
+            <p style="margin-top: 15px;">The risk score is calculated based on:</p>
+            <ul style="margin-left: 25px;">
+                <li>Email security configuration (SPF/DMARC)</li>
+                <li>Missing security headers</li>
+                <li>Open sensitive ports (via Shodan)</li>
+                <li>Known vulnerabilities (CVEs)</li>
+                <li>Information exposure (emails/subdomains)</li>
+            </ul>
+        </div>
 
-8. EXAMPLES
-===========
+        <!-- Legal Section -->
+        <div class="section">
+            <h2 class="section-title">⚖️ Legal & Ethical Guidelines</h2>
+            
+            <div style="background: rgba(255,0,0,0.1); padding: 20px; border-radius: 10px; margin: 15px 0;">
+                <strong style="color: #ff6b6b;">⚠️ YOU MUST HAVE WRITTEN AUTHORIZATION BEFORE USING THIS TOOL ⚠️</strong>
+            </div>
 
-Example 1: Basic Reconnaissance
-───────────────────────────────
-Target: company.com
-Command: python asetool.py -t company.com
+            <h3>Permitted Uses:</h3>
+            <ul style="margin: 10px 0 10px 25px; color: #4caf50;">
+                <li>✓ Penetration testing with written contract</li>
+                <li>✓ Internal security audits of your own infrastructure</li>
+                <li>✓ Educational purposes in isolated lab environments</li>
+                <li>✓ Security awareness training demonstrations</li>
+                <li>✓ CTF (Capture The Flag) competitions</li>
+            </ul>
 
-What it does:
-• DNS enumeration
-• WHOIS lookup
-• Subdomain discovery
-• Email security check
-• Technology detection
-• Security headers
-• Email extraction
-• Risk assessment
+            <h3>Prohibited Uses:</h3>
+            <ul style="margin: 10px 0 10px 25px; color: #ff6b6b;">
+                <li>✗ Scanning systems without permission</li>
+                <li>✗ Competitive intelligence gathering</li>
+                <li>✗ Actual social engineering attacks</li>
+                <li>✗ Data exfiltration or theft</li>
+                <li>✗ Any malicious or illegal activities</li>
+            </ul>
 
-Example 2: Full Recon with Shodan
-─────────────────────────────────
-Target: example.org
-Command: python asetool.py -t example.org -s SHODAN_API_KEY -v
+            <h3>Compliance Requirements:</h3>
+            <ul style="margin-left: 25px;">
+                <li>• Written authorization from system owner</li>
+                <li>• Defined scope of testing</li>
+                <li>• Compliance with local, state, and federal laws</li>
+                <li>• CFAA (Computer Fraud and Abuse Act) compliance</li>
+                <li>• GDPR/DPA compliance for European targets</li>
+                <li>• Responsible disclosure of findings</li>
+            </ul>
+        </div>
 
-Additional features:
-• Open port scanning
-• Vulnerability detection
-• Service enumeration
-• Detailed output
+        <!-- Shodan Integration Section -->
+        <div class="section">
+            <h2 class="section-title">🔌 Shodan Integration</h2>
+            
+            <p>ASERecon optionally integrates with Shodan for enhanced reconnaissance capabilities.</p>
+            
+            <h3>Getting a Free API Key:</h3>
+            <div class="code-block">
+                <span style="color: #0f0;">1.</span> Visit https://account.shodan.io/register<br>
+                <span style="color: #0f0;">2.</span> Create a free account<br>
+                <span style="color: #0f0;">3.</span> Navigate to your API key section<br>
+                <span style="color: #0f0;">4.</span> Copy your API key
+            </div>
 
-Example 3: Quick Assessment
-───────────────────────────
-Target: testsite.com
-Command: python asetool.py -t testsite.com --no-save
+            <h3>What Shodan Adds:</h3>
+            <ul style="margin-left: 25px;">
+                <li>🔌 Open port enumeration</li>
+                <li>🛡️ Service fingerprinting</li>
+                <li>📊 Known vulnerability detection (CVEs)</li>
+                <li>🌍 Geographic and ISP information</li>
+                <li>📜 Historical data</li>
+            </ul>
 
-What it does:
-• Runs full scan
-• Displays results only
-• No file creation
+            <div class="warning-text" style="background: rgba(255,255,0,0.1); padding: 15px; border-radius: 10px; margin-top: 15px;">
+                <strong>Note:</strong> Free Shodan API tier has rate limits (1 query/second). The tool works perfectly without Shodan using API-free OSINT sources.
+            </div>
+        </div>
 
-Example 4: Verbose Custom Output
-────────────────────────────────
-Target: security-lab.com
-Command: python asetool.py -t security-lab.com -s API_KEY -v -o lab_scan.json
+        <!-- FAQ Section -->
+        <div class="section">
+            <h2 class="section-title">❓ Frequently Asked Questions</h2>
+            
+            <details style="margin: 15px 0;">
+                <summary style="cursor: pointer; font-weight: bold; padding: 10px; background: rgba(102,126,234,0.2); border-radius: 5px;">🔹 Do I need a Shodan API key?</summary>
+                <p style="margin-top: 10px; padding: 10px;">No. The tool works perfectly without Shodan using API-free OSINT sources (DNS, certificate transparency, WHOIS, etc.). Shodan only adds optional port scanning and vulnerability detection.</p>
+            </details>
 
-Features:
-• All modules enabled
-• Detailed debug output
-• Custom filename
-• Shodan integration
+            <details style="margin: 15px 0;">
+                <summary style="cursor: pointer; font-weight: bold; padding: 10px; background: rgba(102,126,234,0.2); border-radius: 5px;">🔹 Is this tool free?</summary>
+                <p style="margin-top: 10px; padding: 10px;">Yes, completely free and open-source. No hidden costs or premium features.</p>
+            </details>
 
-═══════════════════════════════════════════════════════════════════════════════
+            <details style="margin: 15px 0;">
+                <summary style="cursor: pointer; font-weight: bold; padding: 10px; background: rgba(102,126,234,0.2); border-radius: 5px;">🔹 Can I scan any website?</summary>
+                <p style="margin-top: 10px; padding: 10px; color: #ff6b6b;">NO! Only systems you own or have written permission to test. Unauthorized scanning is illegal.</p>
+            </details>
 
-9. TROUBLESHOOTING
-==================
+            <details style="margin: 15px 0;">
+                <summary style="cursor: pointer; font-weight: bold; padding: 10px; background: rgba(102,126,234,0.2); border-radius: 5px;">🔹 How long does a scan take?</summary>
+                <p style="margin-top: 10px; padding: 10px;">Typically 30-60 seconds depending on network speed, target response time, and enabled features.</p>
+            </details>
 
-Common Issues and Solutions:
+            <details style="margin: 15px 0;">
+                <summary style="cursor: pointer; font-weight: bold; padding: 10px; background: rgba(102,126,234,0.2); border-radius: 5px;">🔹 What platforms are supported?</summary>
+                <p style="margin-top: 10px; padding: 10px;">Linux, macOS, and Windows (with Python installed). Any platform that supports Python 3.7+.</p>
+            </details>
+        </div>
 
-Issue: "No module named 'requests'"
-Solution: pip install requests
+        <!-- Contributing Section -->
+        <div class="section">
+            <h2 class="section-title">🤝 Contributing</h2>
+            <p>Contributions are welcome! Please follow these guidelines:</p>
+            <ul style="margin: 15px 0 15px 25px;">
+                <li>Fork the repository</li>
+                <li>Create a feature branch</li>
+                <li>Submit a pull request with detailed description</li>
+                <li>Ensure code follows existing style</li>
+                <li>Add tests for new features</li>
+                <li>Update documentation as needed</li>
+            </ul>
+            
+            <div class="code-block">
+                <span style="color: #0f0;">$</span> git checkout -b feature/amazing-feature<br>
+                <span style="color: #0f0;">$</span> git commit -m 'Add amazing feature'<br>
+                <span style="color: #0f0;">$</span> git push origin feature/amazing-feature
+            </div>
+        </div>
 
-Issue: "Shodan library not installed"
-Solution: pip install shodan (or run without -s flag)
+        <!-- Support Section -->
+        <div class="section">
+            <h2 class="section-title">🆘 Support & Resources</h2>
+            <ul style="margin-left: 25px;">
+                <li>📖 <a href="manual.txt" style="color: #667eea;">Full User Manual</a> (manual.txt)</li>
+                <li>🐛 Report issues on <a href="#" style="color: #667eea;">GitHub Issues</a></li>
+                <li>💬 Discussions on <a href="#" style="color: #667eea;">GitHub Discussions</a></li>
+                <li>📧 Security concerns: security@aserecon.local</li>
+            </ul>
+        </div>
 
-Issue: "Connection timeout"
-Solution: Check network connectivity and firewall settings
-
-Issue: "WHOIS lookup failed"
-Solution: Some domains have WHOIS protection; normal behavior
-
-Issue: "Rate limit exceeded" (Shodan)
-Solution: Wait 1 second between scans or upgrade Shodan plan
-
-Issue: "SSL certificate error"
-Solution: Tool ignores SSL errors by design; safe for scanning
-
-Issue: "No results found"
-Solution: 
-• Verify target is accessible
-• Try with -v flag for debug output
-• Check if target blocks automated scans
-
-═══════════════════════════════════════════════════════════════════════════════
-
-10. LEGAL AND ETHICAL GUIDELINES
-================================
-
-⚠️ IMPORTANT LEGAL NOTICE ⚠️
-
-This tool is designed for:
-✓ Authorized penetration testing
-✓ Internal security assessments
-✓ Educational purposes in controlled environments
-✓ System administrators auditing their own infrastructure
-
-This tool is NOT for:
-✗ Unauthorized scanning of external systems
-✗ Competitive intelligence gathering
-✗ Malicious activities
-✗ Violating terms of service
-✗ Privacy violations
-
-Legal Requirements:
-1. Written authorization from system owner
-2. Defined scope of testing
-3. Compliance with local laws (Computer Fraud and Abuse Act, GDPR, etc.)
-4. Responsible disclosure of findings
-5. Data protection and privacy compliance
-
-Best Practices:
-• Always obtain written permission before scanning
-• Define clear scope and boundaries
-• Document all testing activities
-• Respect rate limits to avoid DoS
-• Secure all collected data
-• Delete findings after remediation
-• Follow responsible disclosure procedures
-
-Penalties for Unauthorized Use:
-• Criminal charges under computer fraud laws
-• Civil lawsuits
-• Professional certification revocation
-• Employment termination
-• Fines and imprisonment
-
-═══════════════════════════════════════════════════════════════════════════════
-
-11. FREQUENTLY ASKED QUESTIONS
-==============================
-
-Q1: Do I need a Shodan API key?
-A: No. The tool works without Shodan, but Shodan provides additional 
-   vulnerability and port scanning capabilities.
-
-Q2: Is this tool free?
-A: Yes, completely free and open-source.
-
-Q3: Can I scan any website?
-A: Only those you own or have written permission to test.
-
-Q4: How long does a scan take?
-A: Typically 30-60 seconds depending on network speed and target.
-
-Q5: Will my IP be logged?
-A: Yes, the target's servers will see your IP address during scanning.
-
-Q6: Can I scan internal IP addresses?
-A: Yes, for authorized internal security assessments.
-
-Q7: What's the risk score based on?
-A: Combination of email security, open ports, vulnerabilities, exposed 
-   information, and security misconfigurations.
-
-Q8: How accurate is the technology detection?
-A: High accuracy for common technologies, may miss custom implementations.
-
-Q9: Can I integrate this with other tools?
-A: Yes, use the JSON output for integration with SIEM, SOAR, or other tools.
-
-Q10: Is there a GUI version?
-A: No, this is a CLI tool designed for automation and scripting.
-
-Q11: How do I update the tool?
-A: Download the latest version from the repository.
-
-Q12: What platforms are supported?
-A: Linux, macOS, Windows (with Python installed).
-
-Q13: Can I scan multiple targets?
-A: Use shell scripting or create a wrapper script for batch scanning.
-
-Q14: How do I report bugs?
-A: Submit issues on the GitHub repository with detailed information.
-
-Q15: Is technical support available?
-A: Community support via GitHub issues and documentation.
-
-═══════════════════════════════════════════════════════════════════════════════
-
-VERSION HISTORY
-===============
-
-v3.0 (Current)
-• CLI-only interface with enhanced output
-• Removed HTML report dependency
-• Added comprehensive risk assessment
-• Improved subdomain discovery
-• Enhanced error handling
-• Color-coded terminal output
-• Interactive authorization confirmation
-
-v2.0
-• Added ML detection (removed in v3.0 for CLI focus)
-• Compliance checks
-• Advanced reporting
-
-v1.0
-• Initial release
-• Basic reconnaissance features
-
-═══════════════════════════════════════════════════════════════════════════════
-
-SUPPORT AND CONTACT
-===================
-
-Documentation: See this manual
-Issues: GitHub repository issues page
-Security Concerns: Contact via GitHub private issue
-Feature Requests: GitHub discussions
-
-═══════════════════════════════════════════════════════════════════════════════
-
-DISCLAIMER
-==========
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-USERS ARE SOLELY RESPONSIBLE FOR COMPLIANCE WITH ALL APPLICABLE LAWS AND
-REGULATIONS.
-
-═══════════════════════════════════════════════════════════════════════════════
-                    End of ASERecon v3.0 User Manual
-═══════════════════════════════════════════════════════════════════════════════
+        <!-- Disclaimer Footer -->
+        <div class="footer">
+            <p><strong>DISCLAIMER</strong></p>
+            <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.</p>
+            <p>Users are SOLELY RESPONSIBLE for compliance with all applicable laws and regulations.</p>
+            <p>The authors assume NO LIABILITY for misuse of this tool.</p>
+            <p style="margin-top: 15px;">© 2024 ASERecon Team | Licensed under MIT License</p>
+            <p style="margin-top: 10px; font-size: 12px;">Made with 🔒 for security professionals</p>
+        </div>
+    </div>
+</body>
+</html>
