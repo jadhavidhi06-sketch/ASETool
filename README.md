@@ -1,73 +1,54 @@
-# ASERecon v4.0 (Modular CLI)
+<!-- README.md - GitHub will render this natively -->
 
-ASERecon is an **authorized security assessment** CLI that now includes:
+# 🔍 ASERecon v3.0 - Advanced CLI Security Tool
 
-- Nmap full port scanning (`-p- -sV --open`)
-- Nmap technology-focused NSE scripts
-- Nmap vulnerability NSE scan (`--script vuln`)
-- theHarvester email discovery
-- Interactive module picker so you can run only what you need
-- JSON output containing command outputs for complete review
+<p align="center">
+  <img src="https://img.shields.io/badge/Security-Testing-red" alt="Security Testing">
+  <img src="https://img.shields.io/badge/OSINT-Collection-blue" alt="OSINT">
+  <img src="https://img.shields.io/badge/Python-3.7+-green.svg" alt="Python">
+  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
+</p>
 
-## Legal Notice
-Use only on systems you own or have explicit written permission to test.
+> # ⚠️ EDUCATIONAL PURPOSE ONLY
+> 
+> **CRITICAL LEGAL NOTICE:** This tool is designed SOLELY for authorized penetration testing, 
+> educational security research, and system administrators auditing their own infrastructure.
+> 
+> You MUST have EXPLICIT WRITTEN AUTHORIZATION before using this tool on any system you do not own.
+> Unauthorized use may violate the Computer Fraud and Abuse Act (CFAA), GDPR, HIPAA, PCI DSS, 
+> and other applicable laws. Violators face CRIMINAL PROSECUTION, FINES, and IMPRISONMENT.
 
-## Installation
+---
+
+## 📋 Table of Contents
+
+- [Features](#-features)
+- [Quick Start](#-quick-start)
+- [Installation](#-installation)
+- [Usage Examples](#-usage-examples)
+- [Command Line Options](#-command-line-options)
+- [Risk Scoring](#-risk-scoring)
+- [Shodan Integration](#-shodan-integration)
+- [Legal Guidelines](#-legal-guidelines)
+- [FAQ](#-frequently-asked-questions)
+
+---
+
+## 🚀 Quick Start
 
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/aserecon.git
+cd aserecon
+
+# Install dependencies
 pip install -r requirements.txt
-```
 
-Install OSINT/scan tools in your OS:
-
-- `nmap`
-- `theHarvester`
-
-## Quick Start
-
-```bash
+# Basic scan (no API key required)
 python asetool.py -t example.com
-```
 
-The banner opens an interactive module menu so you can choose specific scans.
+# Full scan with Shodan
+python asetool.py -t example.com -s YOUR_SHODAN_API_KEY
 
-## Non-interactive Usage
-
-Run all modules:
-
-```bash
-python asetool.py -t example.com --non-interactive
-```
-
-Run specific modules only:
-
-```bash
-python asetool.py -t example.com --non-interactive -m dns,email,ports,vulns
-```
-
-Custom output file:
-
-```bash
-python asetool.py -t example.com --non-interactive -m ports,vulns -o results.json
-```
-
-## Modules
-
-- `dns` — DNS records + resolved IP
-- `whois` — domain registration details
-- `subdomains` — crt.sh + common DNS brute checks
-- `email` — MX/SPF/DMARC + theHarvester output
-- `technology` — HTTP fingerprint + nmap NSE web scripts
-- `ports` — nmap open ports/services scan
-- `vulns` — nmap vulnerability NSE scripts
-- `headers` — HTTP security header checks
-
-## Output
-
-- Console: per-module JSON preview
-- File: full JSON report (`aserecon_<target>_<timestamp>.json`)
-- Raw command outputs are retained for nmap/theHarvester modules
-
-## Notes
-
-If `nmap` or `theHarvester` are missing, ASERecon will continue and record an error message in the output.
+# View help
+python asetool.py -h
