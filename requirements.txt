@@ -9,6 +9,7 @@ python-whois>=0.8.0
 
 # HTTP requests and header grabbing
 requests>=2.31.0
+urllib3>=2.0.0
 
 # Progress bars for long operations
 tqdm>=4.66.0
@@ -16,9 +17,8 @@ tqdm>=4.66.0
 # Nmap integration (port scanning)
 python-nmap>=0.7.1
 
-# Cryptography for SSL/TLS certificate analysis (optional but recommended)
+# Cryptography (optional, for future features)
 cryptography>=41.0.0
-pyOpenSSL>=23.2.0
 
 # Note: Nmap system package is also required
 # Install Nmap from: https://nmap.org/download.html
