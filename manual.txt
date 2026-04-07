@@ -1,501 +1,78 @@
-╔═══════════════════════════════════════════════════════════════════════════════╗
-║                    ASERecon v3.0 - User Manual                                ║
-║                  Advanced CLI Security Tool                                   ║
-╚═══════════════════════════════════════════════════════════════════════════════╝
-
-TABLE OF CONTENTS
-=================
-1. Introduction
-2. Installation
-3. Quick Start
-4. Command Line Options
-5. Scan Modules Explained
-6. Shodan Integration
-7. Output and Reporting
-8. Examples
-9. Troubleshooting
-10. Legal and Ethical Guidelines
-11. Frequently Asked Questions
-
-═══════════════════════════════════════════════════════════════════════════════
-
-1. INTRODUCTION
-===============
-ASERecon (Advanced Social Engineering Reconnaissance) is a comprehensive CLI-based
-security assessment tool designed for authorized penetration testers, security
-researchers, and system administrators. It performs extensive OSINT gathering,
-vulnerability detection, and risk assessment without requiring extensive API keys
-(except optional Shodan integration).
-
-Key Features:
-• DNS enumeration (A, MX, NS, TXT, SOA, CNAME records)
-• WHOIS domain registration lookup
-• Subdomain discovery via certificate transparency and brute force
-• Email security analysis (SPF, DMARC, MX records)
-• Technology stack detection (web servers, frameworks, CMS)
-• Shodan integration for vulnerability and port scanning
-• Wayback Machine historical archives
-• Security headers analysis
-• Automated email extraction from web pages
-• Risk scoring and remediation recommendations
-• JSON output for further analysis
-
-═══════════════════════════════════════════════════════════════════════════════
-
-2. INSTALLATION
-===============
-
-Prerequisites:
-• Python 3.7 or higher
-• pip package manager
-
-Step 1: Install required Python packages
-
-pip install requests beautifulsoup4 dnspython python-whois
-
-Optional for Shodan integration:
-pip install shodan
-
-Step 2: Download the tool
-
-Save the asetool.py script to your preferred directory.
-
-Step 3: Make executable (Linux/Mac)
-
-chmod +x asetool.py
-
-Step 4: Test installation
-
-python asetool.py -h
-
-═══════════════════════════════════════════════════════════════════════════════
-
-3. QUICK START
-==============
-
-Basic scan (no API key):
-python asetool.py -t example.com
-
-Full scan with Shodan:
-python asetool.py -t example.com -s YOUR_SHODAN_API_KEY
-
-Verbose scan with custom output:
-python asetool.py -t example.com -s API_KEY -v -o my_results.json
-
-Quick scan without saving:
-python asetool.py -t example.com --no-save
-
-═══════════════════════════════════════════════════════════════════════════════
-
-4. COMMAND LINE OPTIONS
-=======================
-
-Required Arguments:
-┌─────────────────┬────────────────────────────────────────────────┐
-│ Option          │ Description                                    │
-├─────────────────┼────────────────────────────────────────────────┤
-│ -t, --target    │ Target domain or IP address to scan           │
-│                 │ Example: example.com, 192.168.1.1             │
-└─────────────────┴────────────────────────────────────────────────┘
-
-Optional Arguments:
-┌─────────────────┬────────────────────────────────────────────────┐
-│ Option          │ Description                                    │
-├─────────────────┼────────────────────────────────────────────────┤
-│ -s, --shodan    │ Shodan API key for enhanced scanning          │
-│ -v, --verbose   │ Enable detailed output messages                │
-│ -o, --output    │ Save results to custom filename                │
-│ --no-save       │ Disable automatic result saving                │
-│ -h, --help      │ Display detailed help information              │
-└─────────────────┴────────────────────────────────────────────────┘
-
-═══════════════════════════════════════════════════════════════════════════════
-
-5. SCAN MODULES EXPLAINED
-=========================
-
-5.1 DNS Information
-───────────────────
-Retrieves all available DNS records for the target domain:
-• A/AAAA records (IPv4/IPv6 addresses)
-• MX records (mail servers)
-• NS records (name servers)
-• TXT records (including SPF)
-• SOA records (zone authority)
-• CNAME records (aliases)
-• Reverse DNS lookup
-
-5.2 WHOIS Lookup
-────────────────
-Extracts domain registration information:
-• Registrar name
-• Organization/registrant
-• Creation and expiration dates
-• Name servers
-• Country of registration
-• Contact emails
-
-5.3 Subdomain Discovery
-──────────────────────
-Finds subdomains using two methods:
-• Certificate Transparency logs (crt.sh)
-• Common subdomain brute force (100+ common names)
-
-5.4 Email Security Analysis
-──────────────────────────
-Evaluates email security posture:
-• MX record verification
-• SPF record presence and content
-• DMARC record detection
-• Email spoofing vulnerability assessment
-
-5.5 Technology Stack Detection
-─────────────────────────────
-Identifies technologies in use:
-• Web servers (Apache, Nginx, IIS)
-• Programming frameworks (React, Angular, Vue)
-• Content Management Systems (WordPress, Drupal)
-• Security headers configuration
-
-5.6 Shodan Integration (Optional)
-────────────────────────────────
-Requires API key - provides:
-• Open port enumeration
-• Service detection
-• Known vulnerability identification (CVEs)
-• Organization and ISP information
-• Geographic location
-
-5.7 Wayback Machine Archive
-──────────────────────────
-Checks historical records:
-• Archived website snapshots
-• Historical timestamps
-• Content change tracking
-
-5.8 Security Headers Analysis
-────────────────────────────
-Checks for critical security headers:
-• HSTS (Strict-Transport-Security)
-• CSP (Content-Security-Policy)
-• X-Frame-Options
-• X-Content-Type-Options
-• Referrer-Policy
-• X-XSS-Protection
-
-5.9 Email Extraction
-───────────────────
-Extracts email addresses from:
-• Main website page
-• Common pages (/contact, /about, /team)
-• Pattern-based regex matching
-
-5.10 Risk Assessment
-───────────────────
-Automated evaluation including:
-• Risk scoring (0-100)
-• Risk level classification
-• Key findings summary
-• Prioritized recommendations
-• Remediation steps
-
-═══════════════════════════════════════════════════════════════════════════════
-
-6. SHODAN INTEGRATION
-=====================
-
-Getting a Shodan API Key:
-1. Visit https://account.shodan.io/register
-2. Create a free account
-3. Navigate to your API key section
-4. Copy your API key
-
-Free Tier Limitations:
-• 1 query per second rate limit
-• Limited result detail
-• Sufficient for most assessments
-
-What Shodan Provides:
-• Open ports and services
-• Known vulnerabilities (CVEs)
-• Historical data
-• Banner grabbing
-• Geographic information
-
-Without Shodan:
-The tool still performs comprehensive OSINT using API-free sources:
-• DNS enumeration
-• Certificate transparency logs
-• WHOIS databases
-• Public web scraping
-
-═══════════════════════════════════════════════════════════════════════════════
-
-7. OUTPUT AND REPORTING
-=======================
-
-Console Output
-──────────────
-Real-time color-coded output showing:
-• Scan progress indicators
-• Discovered information
-• Warnings and errors
-• Risk assessment summary
-• Final recommendations
-
-JSON Output File
-────────────────
-Default filename: aserecon_<target>_<timestamp>.json
-
-Structure:
-{
-  "target": "example.com",
-  "timestamp": "2024-01-15T10:30:00",
-  "scan_results": {
-    "dns_info": {...},
-    "whois_info": {...},
-    "subdomains": [...],
-    "email_patterns": {...},
-    "technologies": [...],
-    "shodan": {...},
-    "archive": {...},
-    "security_headers": {...},
-    "emails_found": [...],
-    "risk_assessment": {...}
-  }
-}
-
-Custom Output:
-Use -o filename.json to specify custom output path
-Use --no-save to disable file creation
-
-═══════════════════════════════════════════════════════════════════════════════
-
-8. EXAMPLES
-===========
-
-Example 1: Basic Reconnaissance
-───────────────────────────────
-Target: company.com
-Command: python asetool.py -t company.com
-
-What it does:
-• DNS enumeration
-• WHOIS lookup
-• Subdomain discovery
-• Email security check
-• Technology detection
-• Security headers
-• Email extraction
-• Risk assessment
-
-Example 2: Full Recon with Shodan
-─────────────────────────────────
-Target: example.org
-Command: python asetool.py -t example.org -s SHODAN_API_KEY -v
-
-Additional features:
-• Open port scanning
-• Vulnerability detection
-• Service enumeration
-• Detailed output
-
-Example 3: Quick Assessment
-───────────────────────────
-Target: testsite.com
-Command: python asetool.py -t testsite.com --no-save
-
-What it does:
-• Runs full scan
-• Displays results only
-• No file creation
-
-Example 4: Verbose Custom Output
-────────────────────────────────
-Target: security-lab.com
-Command: python asetool.py -t security-lab.com -s API_KEY -v -o lab_scan.json
-
-Features:
-• All modules enabled
-• Detailed debug output
-• Custom filename
-• Shodan integration
-
-═══════════════════════════════════════════════════════════════════════════════
-
-9. TROUBLESHOOTING
-==================
-
-Common Issues and Solutions:
-
-Issue: "No module named 'requests'"
-Solution: pip install requests
-
-Issue: "Shodan library not installed"
-Solution: pip install shodan (or run without -s flag)
-
-Issue: "Connection timeout"
-Solution: Check network connectivity and firewall settings
-
-Issue: "WHOIS lookup failed"
-Solution: Some domains have WHOIS protection; normal behavior
-
-Issue: "Rate limit exceeded" (Shodan)
-Solution: Wait 1 second between scans or upgrade Shodan plan
-
-Issue: "SSL certificate error"
-Solution: Tool ignores SSL errors by design; safe for scanning
-
-Issue: "No results found"
-Solution: 
-• Verify target is accessible
-• Try with -v flag for debug output
-• Check if target blocks automated scans
-
-═══════════════════════════════════════════════════════════════════════════════
-
-10. LEGAL AND ETHICAL GUIDELINES
-================================
-
-⚠️ IMPORTANT LEGAL NOTICE ⚠️
-
-This tool is designed for:
-✓ Authorized penetration testing
-✓ Internal security assessments
-✓ Educational purposes in controlled environments
-✓ System administrators auditing their own infrastructure
-
-This tool is NOT for:
-✗ Unauthorized scanning of external systems
-✗ Competitive intelligence gathering
-✗ Malicious activities
-✗ Violating terms of service
-✗ Privacy violations
-
-Legal Requirements:
-1. Written authorization from system owner
-2. Defined scope of testing
-3. Compliance with local laws (Computer Fraud and Abuse Act, GDPR, etc.)
-4. Responsible disclosure of findings
-5. Data protection and privacy compliance
-
-Best Practices:
-• Always obtain written permission before scanning
-• Define clear scope and boundaries
-• Document all testing activities
-• Respect rate limits to avoid DoS
-• Secure all collected data
-• Delete findings after remediation
-• Follow responsible disclosure procedures
-
-Penalties for Unauthorized Use:
-• Criminal charges under computer fraud laws
-• Civil lawsuits
-• Professional certification revocation
-• Employment termination
-• Fines and imprisonment
-
-═══════════════════════════════════════════════════════════════════════════════
-
-11. FREQUENTLY ASKED QUESTIONS
-==============================
-
-Q1: Do I need a Shodan API key?
-A: No. The tool works without Shodan, but Shodan provides additional 
-   vulnerability and port scanning capabilities.
-
-Q2: Is this tool free?
-A: Yes, completely free and open-source.
-
-Q3: Can I scan any website?
-A: Only those you own or have written permission to test.
-
-Q4: How long does a scan take?
-A: Typically 30-60 seconds depending on network speed and target.
-
-Q5: Will my IP be logged?
-A: Yes, the target's servers will see your IP address during scanning.
-
-Q6: Can I scan internal IP addresses?
-A: Yes, for authorized internal security assessments.
-
-Q7: What's the risk score based on?
-A: Combination of email security, open ports, vulnerabilities, exposed 
-   information, and security misconfigurations.
-
-Q8: How accurate is the technology detection?
-A: High accuracy for common technologies, may miss custom implementations.
-
-Q9: Can I integrate this with other tools?
-A: Yes, use the JSON output for integration with SIEM, SOAR, or other tools.
-
-Q10: Is there a GUI version?
-A: No, this is a CLI tool designed for automation and scripting.
-
-Q11: How do I update the tool?
-A: Download the latest version from the repository.
-
-Q12: What platforms are supported?
-A: Linux, macOS, Windows (with Python installed).
-
-Q13: Can I scan multiple targets?
-A: Use shell scripting or create a wrapper script for batch scanning.
-
-Q14: How do I report bugs?
-A: Submit issues on the GitHub repository with detailed information.
-
-Q15: Is technical support available?
-A: Community support via GitHub issues and documentation.
-
-═══════════════════════════════════════════════════════════════════════════════
-
-VERSION HISTORY
-===============
-
-v3.0 (Current)
-• CLI-only interface with enhanced output
-• Removed HTML report dependency
-• Added comprehensive risk assessment
-• Improved subdomain discovery
-• Enhanced error handling
-• Color-coded terminal output
-• Interactive authorization confirmation
-
-v2.0
-• Added ML detection (removed in v3.0 for CLI focus)
-• Compliance checks
-• Advanced reporting
-
-v1.0
-• Initial release
-• Basic reconnaissance features
-
-═══════════════════════════════════════════════════════════════════════════════
-
-SUPPORT AND CONTACT
-===================
-
-Documentation: See this manual
-Issues: GitHub repository issues page
-Security Concerns: Contact via GitHub private issue
-Feature Requests: GitHub discussions
-
-═══════════════════════════════════════════════════════════════════════════════
-
-DISCLAIMER
-==========
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-USERS ARE SOLELY RESPONSIBLE FOR COMPLIANCE WITH ALL APPLICABLE LAWS AND
-REGULATIONS.
-
-═══════════════════════════════════════════════════════════════════════════════
-                    End of ASERecon v3.0 User Manual
-═══════════════════════════════════════════════════════════════════════════════
+ASERecon v4.0 - User Manual (Modular Edition)
+=============================================
+
+1) PURPOSE
+----------
+ASERecon is a modular command-line security assessment utility for authorized testing.
+It supports targeted workflows so the user can pick exactly which scans to run.
+
+2) KEY CHANGES IN v4.0
+----------------------
+- Added nmap open-port and service scan module.
+- Added nmap technology reconnaissance (NSE http scripts + fingerprints).
+- Added nmap vulnerability module using `--script vuln`.
+- Added theHarvester integration for domain email collection.
+- Added interactive module selection menu in the banner flow.
+- Results now preserve raw command output for complete auditing.
+
+3) REQUIREMENTS
+---------------
+Python deps:
+- requests
+- beautifulsoup4
+- dnspython
+- python-whois
+- lxml
+
+System tools:
+- nmap
+- theHarvester
+
+4) RUNNING THE TOOL
+-------------------
+Interactive mode (recommended):
+  python asetool.py -t example.com
+
+Non-interactive all modules:
+  python asetool.py -t example.com --non-interactive
+
+Non-interactive selected modules:
+  python asetool.py -t example.com --non-interactive -m dns,email,ports,vulns
+
+No JSON save:
+  python asetool.py -t example.com --no-save
+
+Verbose logs:
+  python asetool.py -t example.com -v
+
+5) MODULES
+----------
+- dns         DNS records and target IP
+- whois       WHOIS registration details
+- subdomains  crt.sh + common DNS checks
+- email       MX/SPF/DMARC + theHarvester emails
+- technology  HTTP header/HTML fingerprints + nmap http scripts
+- ports       nmap full TCP port/service detection
+- vulns       nmap vulnerability NSE scripts
+- headers     security headers validation
+
+6) OUTPUT STRUCTURE
+-------------------
+Each run stores results in JSON under `scan_results`.
+For nmap and theHarvester modules, output includes:
+- command string used
+- return code
+- stdout
+- stderr
+- parsed indicators (open ports, CVEs, emails)
+
+7) TROUBLESHOOTING
+------------------
+- If nmap is missing: install nmap and rerun.
+- If theHarvester is missing: install theHarvester and rerun.
+- DNS/WHOIS rate limits may affect remote lookups.
+
+8) AUTHORIZATION + LEGAL
+------------------------
+Only run scans with explicit written permission from the system owner.
+Unauthorized scanning may violate law and policy.
