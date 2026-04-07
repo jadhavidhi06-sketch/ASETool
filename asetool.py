@@ -6,6 +6,8 @@ import json
 import time
 from datetime import datetime
 from typing import Dict, Any, List
+
+# Import from reconsuite
 from reconsuite.reconsuite import ReconSuite
 
 # Try to import progress bar libraries
@@ -61,7 +63,6 @@ def make_banner():
         r"   ██╔══██║╚════██║ ██╔══╝     ██║   ██║   ██║██║   ██║██║     ",
         r"   ██║  ██║║███████║███████╗   ██║   ╚██████╔╝╚██████╔╝███████╗",
         r"   ╚═╝  ╚═╝╝╚══════╝╚══════╝   ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝",
-        r"",
     ]
     
     subtitle = "⚡ ADVANCED SECURITY EVALUATION TOOLKIT ⚡"
@@ -187,7 +188,7 @@ class ProgressTracker:
         sys.stdout.flush()
     
     def finish(self):
-        print()  # New line after progress bar
+        print()
         elapsed = time.time() - self.start_time
         print_color(f"\n✅ All modules completed in {elapsed:.2f} seconds!", Colors.GREEN + Colors.BOLD)
 
@@ -255,6 +256,37 @@ def format_cli_output(results: Dict[str, Any], target: str):
                 if "mx_records" in data:
                     print_color(f"  ✉️  MX Records: {', '.join(data['mx_records'][:3])}", Colors.CYAN)
                     
+            elif module == "emailsec":
+                print_color(f"  📧 Email Security Analysis:", Colors.BOLD + Colors.CYAN)
+                if "mx" in data:
+                    if isinstance(data["mx"], dict):
+                        print_color(f"    ❌ MX Records Error: {data['mx'].get('error', 'Unknown')}", Colors.RED)
+                    else:
+                        print_color(f"    ✓ MX Records: {', '.join(data['mx'][:3])}", Colors.GREEN)
+                
+                if "spf" in data:
+                    if data["spf"]:
+                        print_color(f"    ✓ SPF Record: {data['spf'][0][:100]}...", Colors.GREEN)
+                    else:
+                        print_color(f"    ⚠️  No SPF Record Found", Colors.YELLOW)
+                
+                if "dmarc" in data:
+                    if isinstance(data["dmarc"], dict):
+                        print_color(f"    ❌ DMARC Error: {data['dmarc'].get('error', 'Unknown')}", Colors.RED)
+                    elif data["dmarc"]:
+                        print_color(f"    ✓ DMARC Record: {data['dmarc'][0][:100]}...", Colors.GREEN)
+                    else:
+                        print_color(f"    ⚠️  No DMARC Record Found", Colors.YELLOW)
+                
+                if "spoofing_risk" in data:
+                    risk = data["spoofing_risk"]
+                    risk_score = risk.get("score", 0)
+                    risk_color = Colors.RED if risk_score > 60 else Colors.YELLOW if risk_score > 30 else Colors.GREEN
+                    print_color(f"\n    🎯 Spoofing Risk Assessment:", Colors.BOLD)
+                    print_color(f"      Risk Score: {risk_score}/100", risk_color)
+                    for note in risk.get("notes", []):
+                        print_color(f"      • {note}", Colors.SILVER)
+                    
             elif module == "subdomains":
                 subdomains = data.get("subdomains", [])
                 print_color(f"  🌐 Discovered Subdomains ({len(subdomains)}):", Colors.CYAN)
@@ -281,7 +313,7 @@ def format_cli_output(results: Dict[str, Any], target: str):
                 important = ["Strict-Transport-Security", "Content-Security-Policy", "X-Frame-Options"]
                 for h in important:
                     if h in headers:
-                        print_color(f"    ✓ {h}: {headers[h][:50]}", Colors.GREEN)
+                        print_color(f"    ✓ {h}: {str(headers[h])[:50]}", Colors.GREEN)
                     else:
                         print_color(f"    ✗ {h}: Not Set", Colors.RED)
                         
@@ -307,7 +339,7 @@ def format_cli_output(results: Dict[str, Any], target: str):
         else:
             print_color(f"  {str(data)[:200]}", Colors.SILVER)
         
-        print()  # Add spacing
+        print()
 
 def generate_summary(results: Dict[str, Any], target: str, elapsed_time: float) -> Dict[str, Any]:
     """Generate a comprehensive summary of findings"""
@@ -346,6 +378,13 @@ def generate_summary(results: Dict[str, Any], target: str, elapsed_time: float) 
                 if total_technologies > 0:
                     summary["key_findings"].append(f"Detected {total_technologies} technologies")
                     
+            elif module == "emailsec" and "spoofing_risk" in data:
+                risk_score = data["spoofing_risk"].get("score", 0)
+                stats["spoofing_risk_score"] = risk_score
+                summary["key_findings"].append(f"Email spoofing risk score: {risk_score}/100")
+                for note in data["spoofing_risk"].get("notes", []):
+                    summary["key_findings"].append(f"  • {note}")
+                    
             elif module == "risk" and "risk_score" in data:
                 risk_score = data["risk_score"]
                 stats["risk_score"] = risk_score
@@ -355,7 +394,7 @@ def generate_summary(results: Dict[str, Any], target: str, elapsed_time: float) 
                     summary["risk_level"] = "MEDIUM"
                 else:
                     summary["risk_level"] = "LOW"
-                summary["key_findings"].append(f"Risk assessment score: {risk_score}/100")
+                summary["key_findings"].append(f"Overall risk assessment score: {risk_score}/100")
                 
             elif module == "headers":
                 headers = data.get("headers", {})
