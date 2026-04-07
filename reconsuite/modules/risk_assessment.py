@@ -2,34 +2,68 @@ def run(ctx):
     report = ctx.get("report") or {}
     score = 0
     notes = []
-    modules = report.get("modules",{})
-    emailsec = modules.get("emailsec",{})
-    if emailsec and isinstance(emailsec, dict):
-        s = emailsec.get("spoofing_risk",{})
+    modules = report.get("modules", {}) or {}
+
+    # Email security / spoofing risk
+    emailsec = modules.get("emailsec") or {}
+    if isinstance(emailsec, dict):
+        s = emailsec.get("spoofing_risk") or {}
         if isinstance(s, dict):
-            score += s.get("score",50)
-            if s.get("notes"):
-                notes += s.get("notes")
-    nmap = modules.get("nmap",{})
-    if nmap and isinstance(nmap, dict):
+            try:
+                score += int(s.get("score", 0))
+            except Exception:
+                pass
+            notes_list = s.get("notes")
+            if isinstance(notes_list, list):
+                notes.extend(str(x) for x in notes_list)
+            elif notes_list:
+                notes.append(str(notes_list))
+
+    # Nmap findings
+    nmap = modules.get("nmap") or {}
+    if isinstance(nmap, dict):
         hosts = nmap.get("nmap") or {}
-        for h,vals in (hosts.items() if isinstance(hosts, dict) else []):
-            for p,info in vals.get("tcp",{}).items():
-                score += 1
-                if "vulns" in info or "script" in info:
-                    notes.append(f"Potential vuln on {h}:{p}")
-    sh = modules.get("shodan",{})
-    if sh and isinstance(sh, dict):
-        if sh.get("total"):
-            score += min(30, sh.get("total")*2)
-    headers = modules.get("headers",{})
-    if headers:
-        for k,v in headers.items():
-            if v is None:
+        if isinstance(hosts, dict):
+            for h, vals in hosts.items():
+                if not isinstance(vals, dict):
+                    continue
+                tcp = vals.get("tcp") or {}
+                if isinstance(tcp, dict):
+                    for p, info in tcp.items():
+                        # port keys might be strings; keep as-is for messages
+                        try:
+                            score += 1
+                        except Exception:
+                            pass
+                        if isinstance(info, dict):
+                            # check for vulnerability indicators
+                            if info.get("vulns") or info.get("script") or any(k.startswith("vuln") for k in info):
+                                notes.append(f"Potential vuln on {h}:{p}")
+
+    # Shodan summary
+    sh = modules.get("shodan") or {}
+    if isinstance(sh, dict):
+        try:
+            total = int(sh.get("total") or 0)
+            score += min(30, total * 2)
+        except Exception:
+            pass
+
+    # Security headers (expects modules['headers'] to be a dict of header->value)
+    headers = modules.get("headers") or {}
+    if isinstance(headers, dict):
+        for k, v in headers.items():
+            if v in (None, "", []):
                 score += 5
                 notes.append(f"Missing header {k}")
-    final = max(0, min(100, score))
-    level = "low"
-    if final >= 70: level = "high"
-    elif final >= 40: level = "medium"
+
+    # Finalize
+    final = max(0, min(100, int(score)))
+    if final >= 70:
+        level = "high"
+    elif final >= 40:
+        level = "medium"
+    else:
+        level = "low"
+
     return {"score": final, "level": level, "notes": notes}
