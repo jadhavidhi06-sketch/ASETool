@@ -1,0 +1,363 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                          ASETool - COMPLETE USER MANUAL                        ║
+║                    Advanced Security Enumeration Tool                          ║
+║                         Educational Purpose Only                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+TABLE OF CONTENTS
+=================
+1. Introduction
+2. Installation Guide
+3. Getting Started
+4. Features Explained
+5. Usage Examples
+6. Troubleshooting
+7. Legal & Ethical Guidelines
+8. FAQ
+
+═══════════════════════════════════════════════════════════════════════════════
+
+1. INTRODUCTION
+===============
+ASETool (Advanced Security Enumeration Tool) is a comprehensive OSINT (Open Source
+Intelligence) and network reconnaissance tool designed for educational purposes.
+It allows security professionals, students, and researchers to gather information
+about domains and IP addresses using only publicly available data.
+
+KEY FEATURES:
+- No API keys required - All data comes from public sources
+- Complete DNS enumeration (A, AAAA, MX, NS, TXT, SOA, CNAME, PTR, SPF, DMARC)
+- WHOIS domain/IP information
+- Subdomain discovery
+- HTTP/HTTPS header analysis
+- Network traceroute
+- Email OSINT (social media discovery)
+- IP geolocation
+- Port scanning with Nmap (3 speed options)
+- Interactive menu system
+- Progress bars for all operations
+
+═══════════════════════════════════════════════════════════════════════════════
+
+2. INSTALLATION GUIDE
+=====================
+
+Step 1: Install Python 3.8 or higher
+-------------------------------------
+- Windows: Download from python.org
+- macOS: brew install python3
+- Linux: sudo apt install python3 python3-pip
+
+Step 2: Install Nmap (Required for port scanning)
+--------------------------------------------------
+- Windows: Download from https://nmap.org/download.html
+- macOS: brew install nmap
+- Ubuntu/Debian: sudo apt install nmap
+- CentOS/RHEL: sudo yum install nmap
+
+Step 3: Install Python dependencies
+------------------------------------
+Open terminal/command prompt and run:
+    pip install -r requirements.txt
+
+Alternative (install one by one):
+    pip install dnspython python-whois requests tqdm python-nmap cryptography pyOpenSSL
+
+Step 4: Verify installation
+---------------------------
+Run the tool:
+    python ASETool.py
+
+If you see the banner, installation was successful!
+
+═══════════════════════════════════════════════════════════════════════════════
+
+3. GETTING STARTED
+==================
+
+BASIC USAGE:
+1. Open terminal/command prompt
+2. Navigate to ASETool directory: cd /path/to/ASETool
+3. Run: python ASETool.py
+4. Enter target domain (e.g., example.com) or IP address (e.g., 8.8.8.8)
+5. Select desired OSINT module from the menu
+6. Review results
+
+EXAMPLE SESSION:
+    $ python ASETool.py
+    
+    [Banner displays]
+    
+    [?] Enter domain or IP address: example.com
+    [+] Target resolved: example.com -> 93.184.216.34
+    
+    [Menu displays]
+    
+    [?] Enter your choice (0-10): 1
+    
+    [DNS enumeration runs with progress bar]
+    [Results displayed]
+    
+    [?] Press Enter to continue...
+
+═══════════════════════════════════════════════════════════════════════════════
+
+4. FEATURES EXPLAINED
+=====================
+
+MODULE 1: Full DNS Enumeration
+-------------------------------
+What it does: Retrieves ALL available DNS records for a domain
+Records shown:
+  • A (IPv4 addresses)
+  • AAAA (IPv6 addresses)
+  • MX (Mail servers with priority)
+  • NS (Name servers)
+  • TXT (Text records, including SPF)
+  • SOA (Start of Authority)
+  • CNAME (Canonical names/aliases)
+  • SPF (Sender Policy Framework - extracted from TXT)
+  • DMARC (Domain-based Message Authentication)
+
+When to use: Initial reconnaissance, understanding domain infrastructure
+
+MODULE 2: WHOIS Lookup
+-----------------------
+What it does: Queries domain registration information
+Information shown:
+  • Registrar name
+  • Registration/Expiration dates
+  • Name servers
+  • Organization/individual owner
+  • Country
+  • Contact emails
+
+When to use: Finding domain ownership, expiration dates, contact info
+
+MODULE 3: Reverse DNS (PTR Record)
+----------------------------------
+What it does: Resolves IP address back to hostname
+When to use: Verifying if IP belongs to claimed domain
+
+MODULE 4: Subdomain Enumeration
+-------------------------------
+What it does: Discovers common subdomains using wordlist
+Wordlist includes: www, mail, api, admin, dev, blog, shop, vpn, etc.
+When to use: Expanding attack surface, discovering hidden services
+
+MODULE 5: HTTP Header Grabbing
+-------------------------------
+What it does: Fetches HTTP/HTTPS response headers
+Information shown:
+  • Web server software (Apache, Nginx, etc.)
+  • Status codes
+  • X-Powered-By (PHP, ASP.NET, etc.)
+  • Framework information
+
+When to use: Technology fingerprinting, version detection
+
+MODULE 6: Traceroute
+--------------------
+What it does: Maps network path to target (max 30 hops)
+Shows each hop's IP address and response time
+When to use: Network troubleshooting, understanding routing
+
+MODULE 7: Email OSINT
+---------------------
+What it does: Extracts username from email and suggests social media profiles
+Platforms checked: GitHub, Twitter, LinkedIn, Reddit, Instagram, Facebook
+When to use: Person of Interest (POI) investigation
+
+MODULE 8: IP Geolocation
+------------------------
+What it does: Determines physical location of IP address
+Information shown:
+  • Country, Region, City
+  • ISP/Organization
+  • Latitude/Longitude coordinates
+
+When to use: Understanding target's geographical location
+
+MODULE 9: Port Scan (Nmap)
+--------------------------
+What it does: Scans for open ports on target IP
+Speed options:
+  • Fast: Top 100 ports (quick, minimal bandwidth)
+  • Moderate: Top 1000 ports (balanced)
+  • Slow: All 65535 ports (comprehensive, time-consuming)
+
+Shows: Port number, service name, service banner
+
+When to use: Identifying running services, potential vulnerabilities
+
+MODULE 10: Run ALL Modules
+--------------------------
+What it does: Executes all applicable modules in sequence
+Shows: Final summary with key statistics
+
+═══════════════════════════════════════════════════════════════════════════════
+
+5. USAGE EXAMPLES
+=================
+
+EXAMPLE 1: Basic Domain Reconnaissance
+---------------------------------------
+Target: example.com
+Steps:
+1. Select option 1 (DNS Enumeration)
+2. Select option 2 (WHOIS Lookup)
+3. Select option 4 (Subdomains)
+4. Select option 9 (Port Scan - Moderate speed)
+
+What you'll learn: Complete domain infrastructure
+
+EXAMPLE 2: IP Address Investigation
+------------------------------------
+Target: 8.8.8.8 (Google DNS)
+Steps:
+1. Select option 3 (Reverse DNS) → Should resolve to dns.google
+2. Select option 6 (Traceroute) → See network path
+3. Select option 8 (Geolocation) → Shows location (USA)
+4. Select option 9 (Port Scan) → Shows open DNS ports (53)
+
+EXAMPLE 3: Email Investigation
+------------------------------
+Target email: john.doe@example.com
+Steps:
+1. Select option 7 (Email OSINT)
+2. Enter email address
+3. Review suggested social media profiles
+4. Manually check haveibeenpwned.com for breaches
+
+EXAMPLE 4: Complete Assessment
+------------------------------
+Target: your-own-website.com
+Steps:
+1. Select option 10 (Run ALL Modules)
+2. Choose port scan speed (moderate recommended)
+3. Review complete report
+4. Identify potential security issues
+
+═══════════════════════════════════════════════════════════════════════════════
+
+6. TROUBLESHOOTING
+==================
+
+ISSUE: "Module not found" errors
+SOLUTION: Run "pip install -r requirements.txt" again
+
+ISSUE: "Nmap not found" error
+SOLUTION: Install Nmap system package (see installation guide)
+
+ISSUE: DNS resolution fails
+SOLUTION: Check internet connection, try different domain
+
+ISSUE: WHOIS lookup returns error
+SOLUTION: Some domains have privacy protection, try different TLD
+
+ISSUE: Port scan takes too long
+SOLUTION: Use "fast" speed option instead of "moderate" or "slow"
+
+ISSUE: Permission denied (Linux/macOS)
+SOLUTION: Some features require root: sudo python ASETool.py
+
+ISSUE: Progress bars not showing
+SOLUTION: Ensure tqdm is installed: pip install tqdm
+
+═══════════════════════════════════════════════════════════════════════════════
+
+7. LEGAL & ETHICAL GUIDELINES
+=============================
+
+⚠️ IMPORTANT - READ BEFORE USING ⚠️
+
+This tool is designed for EDUCATIONAL PURPOSES ONLY. By using ASETool, you agree to:
+
+✅ DO:
+  • Test on your own domains and infrastructure
+  • Use with explicit written permission from target owners
+  • Conduct research in controlled lab environments
+  • Learn about OSINT and network security
+  • Report vulnerabilities responsibly
+
+❌ DO NOT:
+  • Scan or enumerate systems without permission
+  • Use for illegal activities or unauthorized access
+  • Attack infrastructure you don't own
+  • Violate terms of service of any platform
+  • Use results for malicious purposes
+
+LEGAL CONSEQUENCES:
+Unauthorized scanning can violate laws including:
+  • Computer Fraud and Abuse Act (CFAA) - USA
+  • Computer Misuse Act - UK
+  • Similar cybercrime laws worldwide
+
+Penalties may include:
+  • Fines up to $500,000
+  • Imprisonment up to 20 years
+  • Civil lawsuits from affected parties
+
+SAFE PRACTICES:
+  1. Always obtain written permission before testing
+  2. Use isolated lab environments for practice
+  3. Never scan networks you don't own
+  4. Respect rate limits and server resources
+  5. Document authorization for all tests
+
+═══════════════════════════════════════════════════════════════════════════════
+
+8. FREQUENTLY ASKED QUESTIONS (FAQ)
+===================================
+
+Q1: Do I need API keys for any feature?
+A1: NO! All features use public data or local tools. No API registration required.
+
+Q2: Why does Nmap only use A record IP?
+A2: Port scanning requires a single IP address. A records provide IPv4 addresses.
+    Other DNS records (MX, NS) point to different servers.
+
+Q3: Can I scan multiple targets?
+A3: Currently one target per session. Run tool multiple times for different targets.
+
+Q4: How long does a slow port scan take?
+A4: Approximately 10-30 minutes depending on network and target responsiveness.
+
+Q5: Is this tool illegal?
+A5: The tool itself is legal. MISUSE (scanning without permission) is illegal.
+
+Q6: Can I add my own subdomain wordlist?
+A6: Yes! Edit the "common_subdomains" list in subdomain_enum() function.
+
+Q7: Why can't I see all DNS records for some domains?
+A7: Some records are optional or intentionally hidden by domain administrators.
+
+Q8: Does geolocation always work?
+A8: It uses free ip-api.com which is reliable but not 100% accurate.
+
+Q9: Can I save results to a file?
+A9: Current version displays results on screen. Future versions may add file export.
+
+Q10: How do I update the tool?
+A10: Download latest version from source. Check for updates periodically.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+SUPPORT & CONTACT
+=================
+For issues, questions, or contributions:
+  • Documentation: See this manual
+  • Issues: Report bugs with detailed error messages
+  • Educational inquiries: Contact your security instructor
+
+VERSION INFORMATION
+===================
+ASETool Version: 2.0
+Release Date: 2026
+Python Compatibility: 3.8+
+License: Educational Use Only
+
+═══════════════════════════════════════════════════════════════════════════════
+                    THANK YOU FOR USING ASETool RESPONSIBLY!
+                          Stay ethical, stay informed.
+═══════════════════════════════════════════════════════════════════════════════

@@ -1,584 +1,567 @@
 #!/usr/bin/env python3
-import os
+"""
+ASETool - Complete OSINT & Network Toolkit
+Educational Purpose Only - No API Keys Required
+Version: 2.0
+"""
+
+import subprocess
 import sys
-import shutil
-import json
-import time
+import socket
+import re
+import dns.resolver
+import dns.reversename
+import requests
+import whois
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import List, Dict, Optional, Tuple
+import ipaddress
+import time
 
-# Import from reconsuite
-from reconsuite.reconsuite import ReconSuite
-
-# Try to import progress bar libraries
+# Optional imports with fallbacks
 try:
+    import nmap
     from tqdm import tqdm
-    TQDM_AVAILABLE = True
+    NMAP_AVAILABLE = True
 except ImportError:
-    TQDM_AVAILABLE = False
-    print("[!] Install tqdm for better progress bars: pip install tqdm")
+    NMAP_AVAILABLE = False
+    print("[!] Nmap module not installed. Install with: pip install python-nmap")
 
-# Try to import curses menu helper
 try:
-    from reconsuite.curses_menu import run_curses_menu
-    CURSES_AVAILABLE = True
-except Exception:
-    CURSES_AVAILABLE = False
+    from cryptography import x509
+    from cryptography.hazmat.backends import default_backend
+    import ssl as ssl_lib
+    CRYPTO_AVAILABLE = True
+except ImportError:
+    CRYPTO_AVAILABLE = False
 
-# Color codes for rich CLI output
-class Colors:
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    CYAN = '\033[96m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    DIM = '\033[2m'
-    RESET = '\033[0m'
-    
-    # RGB colors for cinematic feel
-    GOLD = '\033[38;2;255;215;0m'
-    SILVER = '\033[38;2;192;192;192m'
-    DARK_RED = '\033[38;2;139;0;0m'
-    BRIGHT_RED = '\033[38;2;255;0;85m'
-    BRIGHT_CYAN = '\033[38;2;0;255;255m'
+# ========== UNIQUE BANNER ==========
+BANNER = r"""
+    ╔══════════════════════════════════════════════════════════════╗
+    ║  █████╗ ███████╗███████╗████████╗ ██████╗  ██████╗ ██╗      ║
+    ║ ██╔══██╗██╔════╝██╔════╝╚══██╔══╝██╔═══██╗██╔═══██╗██║      ║
+    ║ ███████║███████╗█████╗     ██║   ██║   ██║██║   ██║██║      ║
+    ║ ██╔══██║╚════██║██╔══╝     ██║   ██║   ██║██║   ██║██║      ║
+    ║ ██║  ██║███████║███████╗   ██║   ╚██████╔╝╚██████╔╝███████╗ ║
+    ║ ╚═╝  ╚═╝╚══════╝╚══════╝   ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝ ║
+    ║     Advanced Security Enumeration Tool - Complete OSINT     ║
+    ║                    Educational Purpose Only                  ║
+    ╚══════════════════════════════════════════════════════════════╝
+"""
 
-def print_color(text: str, color: str = Colors.RESET, end: str = "\n"):
-    """Print colored text"""
-    print(f"{color}{text}{Colors.RESET}", end=end)
+# ========== UTILITY FUNCTIONS ==========
+def print_banner():
+    print("\033[94m" + BANNER + "\033[0m")
+    print("\033[93m[!] FOR AUTHORIZED SECURITY TRAINING & EDUCATIONAL PURPOSES ONLY\033[0m")
+    print("\033[96m[+] No API keys required - All features use public data\033[0m\n")
 
-def make_banner():
-    cols = 80
-    try:
-        cols = os.get_terminal_size().columns
-        cols = max(80, min(cols, 140))
-    except Exception:
-        cols = 80
-    
-    title_lines = [
-        r"    █████╗ ███████╗ ███████╗████████╗ ██████╗  ██████╗ ██╗     ",
-        r"   ██╔══██╗██╔════╝ ██╔════╝╚══██╔══╝██╔═══██╗██╔═══██╗██║     ",
-        r"   ███████║███████╗ █████╗     ██║   ██║   ██║██║   ██║██║     ",
-        r"   ██╔══██║╚════██║ ██╔══╝     ██║   ██║   ██║██║   ██║██║     ",
-        r"   ██║  ██║║███████║███████╗   ██║   ╚██████╔╝╚██████╔╝███████╗",
-        r"   ╚═╝  ╚═╝╝╚══════╝╚══════╝   ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝",
-    ]
-    
-    subtitle = "⚡ ADVANCED SECURITY EVALUATION TOOLKIT ⚡"
-    tagline = "Precision Reconnaissance • Ethical Intelligence • Professional Grade"
-    version = "v2.1.0"
-    
-    art_width = max(len(line) for line in title_lines)
-    start_col = (cols - art_width) // 2 if art_width < cols else 0
-    
-    gradient_lines = []
-    for i, line in enumerate(title_lines):
-        if i < 6:
-            color = Colors.BRIGHT_CYAN if i % 2 == 0 else Colors.GOLD
-        else:
-            color = Colors.BRIGHT_RED if i % 2 == 0 else Colors.SILVER
-        
-        spaced_line = ' ' * start_col + line
-        gradient_lines.append(f"{color}{spaced_line}{Colors.RESET}")
-    
-    banner = "\n".join([
-        Colors.DARK_RED + "═" * cols + Colors.RESET,
-        Colors.GOLD + "✨" + " " * (cols - 2) + "✨" + Colors.RESET,
-        "",
-        *gradient_lines,
-        "",
-        Colors.BOLD + Colors.GOLD + subtitle.center(cols) + Colors.RESET,
-        Colors.SILVER + tagline.center(cols) + Colors.RESET,
-        "",
-        Colors.DIM + version.center(cols) + Colors.RESET,
-        Colors.DARK_RED + "─" * cols + Colors.RESET,
-        Colors.GOLD + "✨" + " " * (cols - 2) + "✨" + Colors.RESET,
-        Colors.DARK_RED + "═" * cols + Colors.RESET,
-    ])
-    
-    return banner
+def progress_bar(iterable, desc="Processing", total=None):
+    return tqdm(iterable, desc=desc, total=total, unit="item", ncols=80)
 
-BANNER = make_banner()
-DEFAULT_MODULES = ["dns", "whois", "subdomains", "emailsec", "tech", "nmap", "emails", "headers", "wayback", "shodan", "risk"]
+def clear_screen():
+    """Clear terminal screen."""
+    import os
+    os.system('cls' if os.name == 'nt' else 'clear')
 
-def ensure_results_dir(base="results"):
-    os.makedirs(base, exist_ok=True)
-    return base
-
-def _safe_name(name: str) -> str:
-    return "".join(c if c.isalnum() or c in ("-", "_", ".") else "_" for c in name)
-
-def next_target_dir(base, target):
-    safe = _safe_name(target)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    name = f"{safe}_{timestamp}"
-    out = os.path.join(base, name)
-    os.makedirs(out, exist_ok=True)
-    return out
-
-def choose_modules():
-    if CURSES_AVAILABLE:
-        chosen = run_curses_menu(DEFAULT_MODULES)
-        if chosen:
-            return chosen
-    
-    print_color("\n📋 Available Modules:", Colors.BOLD + Colors.CYAN)
-    print_color("  " + "─" * 50, Colors.DIM)
-    for i, m in enumerate(DEFAULT_MODULES, 1):
-        print(f"  {i:2}. {m:12}", end="  ")
-        if i % 3 == 0:
-            print()
-    if len(DEFAULT_MODULES) % 3 != 0:
-        print()
-    print_color("  " + "─" * 50, Colors.DIM)
-    print_color("  0. ALL modules (full reconnaissance)", Colors.GOLD)
-    
-    sel = input(f"\n{Colors.BRIGHT_CYAN}🎯 Enter module numbers (comma-separated) or 0 for all: {Colors.RESET}").strip()
-    if sel in ("0", "all", "0."):
-        return DEFAULT_MODULES
-    
-    nums = [s.strip() for s in sel.split(",") if s.strip().isdigit()]
-    picked = []
-    for n in nums:
-        idx = int(n) - 1
-        if 0 <= idx < len(DEFAULT_MODULES):
-            picked.append(DEFAULT_MODULES[idx])
-    
-    return picked or DEFAULT_MODULES
-
-def prompt_yes_no(prompt, default=False):
-    yn = "Y/n" if default else "y/N"
-    ans = input(f"{prompt} [{yn}]: ").strip().lower()
-    if ans == "" and default:
-        return True
-    return ans in ("y", "yes")
-
-class ProgressTracker:
-    def __init__(self, total_modules: int):
-        self.total = total_modules
-        self.completed = 0
-        self.current_module = ""
-        self.start_time = time.time()
-        
-    def update(self, module_name: str, status: str = "running"):
-        self.current_module = module_name
-        if status == "completed":
-            self.completed += 1
-        self.display()
-    
-    def display(self):
-        cols = 80
-        try:
-            cols = os.get_terminal_size().columns
-        except:
-            pass
-        
-        percent = (self.completed / self.total) * 100 if self.total > 0 else 0
-        bar_length = min(50, cols - 40)
-        filled = int(bar_length * self.completed // self.total) if self.total > 0 else 0
-        bar = "█" * filled + "░" * (bar_length - filled)
-        
-        elapsed = time.time() - self.start_time
-        eta = (elapsed / self.completed * (self.total - self.completed)) if self.completed > 0 else 0
-        
-        sys.stdout.write(f"\r{Colors.BRIGHT_CYAN}Progress: [{bar}] {percent:5.1f}%{Colors.RESET} ")
-        sys.stdout.write(f"{Colors.SILVER}[{self.completed}/{self.total}] | {Colors.GOLD}{self.current_module:<20}{Colors.RESET}")
-        sys.stdout.write(f" {Colors.DIM}| Elapsed: {elapsed:.1f}s | ETA: {eta:.1f}s{Colors.RESET}")
-        sys.stdout.flush()
-    
-    def finish(self):
-        print()
-        elapsed = time.time() - self.start_time
-        print_color(f"\n✅ All modules completed in {elapsed:.2f} seconds!", Colors.GREEN + Colors.BOLD)
-
-def run_module_with_progress(suite: ReconSuite, module: str, progress: ProgressTracker) -> Dict[str, Any]:
-    """Run a single module and return its results"""
-    progress.update(module, "running")
-    
-    try:
-        # Call the appropriate module method
-        if module == "dns":
-            result = suite.dns_enumeration()
-        elif module == "whois":
-            result = suite.whois_lookup()
-        elif module == "subdomains":
-            result = suite.subdomain_enumeration()
-        elif module == "emailsec":
-            result = suite.email_security()
-        elif module == "tech":
-            result = suite.technology_detection()
-        elif module == "nmap":
-            result = suite.nmap_scan()
-        elif module == "emails":
-            result = suite.email_discovery()
-        elif module == "headers":
-            result = suite.http_headers()
-        elif module == "wayback":
-            result = suite.wayback_machine()
-        elif module == "shodan":
-            result = suite.shodan_search()
-        elif module == "risk":
-            result = suite.risk_assessment()
-        else:
-            result = {"error": f"Unknown module: {module}"}
-        
-        progress.update(module, "completed")
-        return {module: result}
-        
-    except Exception as e:
-        progress.update(module, "completed")
-        return {module: {"error": str(e)}}
-
-def format_cli_output(results: Dict[str, Any], target: str):
-    """Format and display results in a readable CLI format"""
-    print_color("\n" + "="*80, Colors.BOLD + Colors.GOLD)
-    print_color(f"📊 RECONNAISSANCE RESULTS FOR: {target}", Colors.BOLD + Colors.BRIGHT_CYAN)
-    print_color("="*80 + "\n", Colors.BOLD + Colors.GOLD)
-    
-    for module, data in results.items():
-        if not data:
-            continue
-            
-        print_color(f"\n▶ {module.upper()} MODULE", Colors.BOLD + Colors.GREEN)
-        print_color("  " + "─"*76, Colors.DIM)
-        
-        if isinstance(data, dict):
-            # Handle errors
-            if "error" in data:
-                print_color(f"  ❌ Error: {data['error']}", Colors.RED)
-                continue
-            
-            # Format specific module outputs
-            if module == "dns":
-                if "a_records" in data:
-                    print_color(f"  📍 A Records: {', '.join(data['a_records'][:5])}", Colors.CYAN)
-                if "mx_records" in data:
-                    print_color(f"  ✉️  MX Records: {', '.join(data['mx_records'][:3])}", Colors.CYAN)
-                    
-            elif module == "emailsec":
-                print_color(f"  📧 Email Security Analysis:", Colors.BOLD + Colors.CYAN)
-                if "mx" in data:
-                    if isinstance(data["mx"], dict):
-                        print_color(f"    ❌ MX Records Error: {data['mx'].get('error', 'Unknown')}", Colors.RED)
-                    else:
-                        print_color(f"    ✓ MX Records: {', '.join(data['mx'][:3])}", Colors.GREEN)
-                
-                if "spf" in data:
-                    if data["spf"]:
-                        print_color(f"    ✓ SPF Record: {data['spf'][0][:100]}...", Colors.GREEN)
-                    else:
-                        print_color(f"    ⚠️  No SPF Record Found", Colors.YELLOW)
-                
-                if "dmarc" in data:
-                    if isinstance(data["dmarc"], dict):
-                        print_color(f"    ❌ DMARC Error: {data['dmarc'].get('error', 'Unknown')}", Colors.RED)
-                    elif data["dmarc"]:
-                        print_color(f"    ✓ DMARC Record: {data['dmarc'][0][:100]}...", Colors.GREEN)
-                    else:
-                        print_color(f"    ⚠️  No DMARC Record Found", Colors.YELLOW)
-                
-                if "spoofing_risk" in data:
-                    risk = data["spoofing_risk"]
-                    risk_score = risk.get("score", 0)
-                    risk_color = Colors.RED if risk_score > 60 else Colors.YELLOW if risk_score > 30 else Colors.GREEN
-                    print_color(f"\n    🎯 Spoofing Risk Assessment:", Colors.BOLD)
-                    print_color(f"      Risk Score: {risk_score}/100", risk_color)
-                    for note in risk.get("notes", []):
-                        print_color(f"      • {note}", Colors.SILVER)
-                    
-            elif module == "subdomains":
-                subdomains = data.get("subdomains", [])
-                print_color(f"  🌐 Discovered Subdomains ({len(subdomains)}):", Colors.CYAN)
-                for sub in subdomains[:10]:
-                    print_color(f"    • {sub}", Colors.SILVER)
-                if len(subdomains) > 10:
-                    print_color(f"    ... and {len(subdomains)-10} more", Colors.DIM)
-                    
-            elif module == "emails":
-                emails = data.get("emails", [])
-                print_color(f"  📧 Found Emails ({len(emails)}):", Colors.CYAN)
-                for email in emails[:10]:
-                    print_color(f"    • {email}", Colors.SILVER)
-                    
-            elif module == "tech":
-                tech_stack = data.get("technologies", [])
-                print_color(f"  💻 Technology Stack ({len(tech_stack)}):", Colors.CYAN)
-                for tech in tech_stack[:10]:
-                    print_color(f"    • {tech}", Colors.SILVER)
-                    
-            elif module == "headers":
-                headers = data.get("headers", {})
-                print_color(f"  🔒 Security Headers:", Colors.CYAN)
-                important = ["Strict-Transport-Security", "Content-Security-Policy", "X-Frame-Options"]
-                for h in important:
-                    if h in headers:
-                        print_color(f"    ✓ {h}: {str(headers[h])[:50]}", Colors.GREEN)
-                    else:
-                        print_color(f"    ✗ {h}: Not Set", Colors.RED)
-                        
-            elif module == "risk":
-                risk_score = data.get("risk_score", "N/A")
-                findings = data.get("findings", [])
-                print_color(f"  ⚠️  Risk Score: {risk_score}/100", Colors.YELLOW)
-                print_color(f"  📋 Key Findings ({len(findings)}):", Colors.CYAN)
-                for finding in findings[:5]:
-                    print_color(f"    • {finding}", Colors.SILVER)
-                    
-            else:
-                # Generic output for other modules
-                for key, value in list(data.items())[:5]:
-                    if isinstance(value, list):
-                        print_color(f"  📌 {key}: {len(value)} items", Colors.CYAN)
-                        for item in value[:3]:
-                            print_color(f"      • {item}", Colors.SILVER)
-                    elif isinstance(value, dict):
-                        print_color(f"  📌 {key}: {len(value)} entries", Colors.CYAN)
-                    else:
-                        print_color(f"  📌 {key}: {str(value)[:100]}", Colors.CYAN)
-        else:
-            print_color(f"  {str(data)[:200]}", Colors.SILVER)
-        
-        print()
-
-def generate_summary(results: Dict[str, Any], target: str, elapsed_time: float) -> Dict[str, Any]:
-    """Generate a comprehensive summary of findings"""
-    summary = {
-        "target": target,
-        "scan_time": datetime.now().isoformat(),
-        "duration_seconds": elapsed_time,
-        "modules_executed": len(results),
-        "statistics": {},
-        "key_findings": [],
-        "risk_level": "Unknown"
+# ========== 1. FULL DNS LOOKUP ==========
+def full_dns_lookup(domain: str) -> Dict:
+    """Complete DNS enumeration showing ALL record types."""
+    results = {
+        "A": [], "AAAA": [], "MX": [], "NS": [], "TXT": [],
+        "SOA": [], "CNAME": [], "PTR": [], "SPF": [], "DMARC": []
     }
     
-    stats = {}
-    total_emails = 0
-    total_subdomains = 0
-    total_technologies = 0
+    print("\n\033[1;33m[+] Performing FULL DNS Enumeration...\033[0m")
     
-    for module, data in results.items():
-        if isinstance(data, dict):
-            if module == "emails" and "emails" in data:
-                total_emails = len(data["emails"])
-                stats["emails_found"] = total_emails
-                if total_emails > 0:
-                    summary["key_findings"].append(f"Found {total_emails} email addresses")
-                    
-            elif module == "subdomains" and "subdomains" in data:
-                total_subdomains = len(data["subdomains"])
-                stats["subdomains_found"] = total_subdomains
-                if total_subdomains > 0:
-                    summary["key_findings"].append(f"Discovered {total_subdomains} subdomains")
-                    
-            elif module == "tech" and "technologies" in data:
-                total_technologies = len(data["technologies"])
-                stats["technologies_detected"] = total_technologies
-                if total_technologies > 0:
-                    summary["key_findings"].append(f"Detected {total_technologies} technologies")
-                    
-            elif module == "emailsec" and "spoofing_risk" in data:
-                risk_score = data["spoofing_risk"].get("score", 0)
-                stats["spoofing_risk_score"] = risk_score
-                summary["key_findings"].append(f"Email spoofing risk score: {risk_score}/100")
-                for note in data["spoofing_risk"].get("notes", []):
-                    summary["key_findings"].append(f"  • {note}")
-                    
-            elif module == "risk" and "risk_score" in data:
-                risk_score = data["risk_score"]
-                stats["risk_score"] = risk_score
-                if risk_score > 70:
-                    summary["risk_level"] = "HIGH"
-                elif risk_score > 40:
-                    summary["risk_level"] = "MEDIUM"
+    record_types = ['A', 'AAAA', 'MX', 'NS', 'TXT', 'SOA', 'CNAME']
+    for rec_type in progress_bar(record_types, desc="DNS Lookup"):
+        try:
+            answers = dns.resolver.resolve(domain, rec_type)
+            for rdata in answers:
+                if rec_type == 'MX':
+                    results[rec_type].append(f"{rdata.preference} {rdata.exchange}")
+                elif rec_type == 'SOA':
+                    results[rec_type].append(str(rdata).split()[0])
                 else:
-                    summary["risk_level"] = "LOW"
-                summary["key_findings"].append(f"Overall risk assessment score: {risk_score}/100")
-                
-            elif module == "headers":
-                headers = data.get("headers", {})
-                missing_security = []
-                for h in ["Strict-Transport-Security", "Content-Security-Policy", "X-Frame-Options"]:
-                    if h not in headers:
-                        missing_security.append(h)
-                if missing_security:
-                    summary["key_findings"].append(f"Missing security headers: {', '.join(missing_security)}")
+                    results[rec_type].append(str(rdata))
+        except dns.resolver.NoAnswer:
+            pass
+        except dns.resolver.NXDOMAIN:
+            pass
+        except Exception as e:
+            pass
     
-    summary["statistics"] = stats
-    return summary
+    # SPF (TXT record containing v=spf1)
+    for txt in results['TXT']:
+        if 'v=spf1' in txt.lower():
+            results['SPF'].append(txt)
+    
+    # DMARC (try _dmarc subdomain)
+    try:
+        dmarc_answers = dns.resolver.resolve(f"_dmarc.{domain}", 'TXT')
+        for rdata in dmarc_answers:
+            results['DMARC'].append(str(rdata))
+    except:
+        pass
+    
+    # Display ALL results
+    print("\n\033[1;32m=== COMPLETE DNS RECORDS ===\033[0m")
+    for rec_type, records in results.items():
+        if records:
+            print(f"\n\033[1;36m{rec_type} Records ({len(records)}):\033[0m")
+            for r in records[:10]:  # Show first 10
+                print(f"  └─ {r}")
+            if len(records) > 10:
+                print(f"  └─ ... and {len(records)-10} more")
+        else:
+            print(f"\n\033[1;36m{rec_type} Records:\033[0m None found")
+    
+    return results
 
-def display_summary(summary: Dict[str, Any]):
-    """Display the final summary in a nice format"""
-    print_color("\n" + "🎯"*40, Colors.BOLD + Colors.GOLD)
-    print_color("📊 EXECUTIVE SUMMARY", Colors.BOLD + Colors.BRIGHT_CYAN)
-    print_color("🎯"*40 + "\n", Colors.BOLD + Colors.GOLD)
-    
-    print_color(f"Target: {summary['target']}", Colors.CYAN)
-    print_color(f"Scan Duration: {summary['duration_seconds']:.2f} seconds", Colors.CYAN)
-    print_color(f"Modules Executed: {summary['modules_executed']}", Colors.CYAN)
-    print_color(f"Risk Level: {summary['risk_level']}", 
-                Colors.RED if summary['risk_level'] == "HIGH" else Colors.YELLOW if summary['risk_level'] == "MEDIUM" else Colors.GREEN)
-    
-    if summary['statistics']:
-        print_color("\n📈 Statistics:", Colors.BOLD + Colors.GREEN)
-        for key, value in summary['statistics'].items():
-            print_color(f"  • {key.replace('_', ' ').title()}: {value}", Colors.SILVER)
-    
-    if summary['key_findings']:
-        print_color("\n🔑 Key Findings:", Colors.BOLD + Colors.YELLOW)
-        for finding in summary['key_findings']:
-            print_color(f"  • {finding}", Colors.SILVER)
-    
-    print_color("\n" + "="*80, Colors.DIM)
+# ========== 2. WHOIS LOOKUP ==========
+def whois_lookup(target: str) -> Dict:
+    """WHOIS for domain or IP."""
+    print("\n\033[1;33m[+] Performing WHOIS Lookup...\033[0m")
+    try:
+        w = whois.whois(target)
+        result = {
+            "Domain Name": target,
+            "Registrar": w.registrar,
+            "Creation Date": w.creation_date,
+            "Expiration Date": w.expiration_date,
+            "Name Servers": w.name_servers,
+            "Organization": w.org,
+            "Country": w.country,
+            "Emails": w.emails
+        }
+        
+        print("\n\033[1;32m=== WHOIS INFORMATION ===\033[0m")
+        for key, value in result.items():
+            if value:
+                print(f"  \033[1;36m{key}:\033[0m {value}")
+        return result
+    except Exception as e:
+        print(f"  [!] WHOIS lookup failed: {e}")
+        return {"error": str(e)}
 
-def save_detailed_report(results: Dict[str, Any], target_dir: str, target: str, summary: Dict[str, Any]):
-    """Save comprehensive detailed reports in multiple formats"""
-    
-    # Save full JSON report
-    json_path = os.path.join(target_dir, "complete_report.json")
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump({
-            "metadata": {
-                "target": target,
-                "timestamp": datetime.now().isoformat(),
-                "tool": "ASETool v2.1.0"
-            },
-            "summary": summary,
-            "detailed_results": results
-        }, f, indent=2, default=str)
-    
-    # Save readable text report
-    txt_path = os.path.join(target_dir, "readable_report.txt")
-    with open(txt_path, 'w', encoding='utf-8') as f:
-        f.write("="*80 + "\n")
-        f.write(f"ASETool Reconnaissance Report - {target}\n")
-        f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write("="*80 + "\n\n")
-        
-        f.write(f"Duration: {summary['duration_seconds']:.2f} seconds\n")
-        f.write(f"Risk Level: {summary['risk_level']}\n\n")
-        
-        f.write("KEY FINDINGS:\n")
-        f.write("-"*40 + "\n")
-        for finding in summary['key_findings']:
-            f.write(f"• {finding}\n")
-        
-        f.write("\n\nDETAILED RESULTS:\n")
-        f.write("-"*40 + "\n")
-        for module, data in results.items():
-            f.write(f"\n[{module.upper()}]\n")
-            f.write(json.dumps(data, indent=2, default=str))
-            f.write("\n" + "-"*40 + "\n")
-    
-    # Save CSV for statistics
-    csv_path = os.path.join(target_dir, "statistics.csv")
-    with open(csv_path, 'w', encoding='utf-8') as f:
-        f.write("Metric,Value\n")
-        for key, value in summary['statistics'].items():
-            f.write(f"{key},{value}\n")
-        f.write(f"duration_seconds,{summary['duration_seconds']}\n")
-        f.write(f"risk_level,{summary['risk_level']}\n")
-    
-    return json_path, txt_path, csv_path
+# ========== 3. REVERSE DNS ==========
+def reverse_dns(ip: str) -> Optional[str]:
+    """PTR record lookup."""
+    print("\n\033[1;33m[+] Performing Reverse DNS Lookup...\033[0m")
+    try:
+        addr = dns.reversename.from_address(ip)
+        ptr = dns.resolver.resolve(addr, "PTR")
+        result = str(ptr[0])
+        print(f"\n\033[1;32m=== REVERSE DNS ===\033[0m")
+        print(f"  └─ PTR Record: {result}")
+        return result
+    except:
+        print(f"  └─ PTR Record: Not found")
+        return None
 
-def main():
-    print(BANNER)
-    print_color("\n🎬 INITIALIZING RECONNAISSANCE SEQUENCE...", Colors.GOLD)
+# ========== 4. SUBDOMAIN ENUMERATION ==========
+def subdomain_enum(domain: str) -> List[str]:
+    """Common subdomain brute force (no API)."""
+    common_subdomains = [
+        "www", "mail", "ftp", "localhost", "webmail", "smtp", "pop", "ns1", "webdisk",
+        "ns2", "cpanel", "whm", "autodiscover", "autoconfig", "ns", "test", "dev",
+        "api", "blog", "shop", "forum", "support", "vpn", "remote", "secure", "portal",
+        "admin", "demo", "stage", "staging", "static", "cdn", "media", "img", "assets",
+        "video", "download", "cloud", "backup", "mail2", "ns3", "dns", "mysql", "db",
+        "sql", "server", "web", "app", "apps", "internal", "intranet", "portal", "login"
+    ]
+    found = []
+    print("\n\033[1;33m[+] Enumerating Subdomains...\033[0m")
     
-    # Get target
-    if len(sys.argv) > 1:
-        target = sys.argv[1]
-        print_color(f"🎯 TARGET SPECIFIED: {target}", Colors.BRIGHT_CYAN)
+    for sub in progress_bar(common_subdomains, desc="Subdomain scan"):
+        try:
+            target = f"{sub}.{domain}"
+            socket.gethostbyname(target)
+            found.append(target)
+        except:
+            pass
+    
+    print(f"\n\033[1;32m=== SUBDOMAINS FOUND ({len(found)}) ===\033[0m")
+    for sub in found:
+        print(f"  └─ {sub}")
+    
+    if not found:
+        print("  └─ No subdomains found")
+    
+    return found
+
+# ========== 5. HTTP HEADER GRABBING ==========
+def grab_http_headers(domain: str) -> Dict:
+    """Fetch HTTP/HTTPS headers for tech detection."""
+    results = {}
+    print("\n\033[1;33m[+] Grabbing HTTP Headers...\033[0m")
+    
+    for protocol in ["http", "https"]:
+        url = f"{protocol}://{domain}"
+        try:
+            response = requests.get(url, timeout=5, allow_redirects=True)
+            headers = dict(response.headers)
+            server = headers.get('Server', 'Unknown')
+            tech = {
+                "server": server,
+                "powered_by": headers.get('X-Powered-By', 'Not found'),
+                "framework": headers.get('X-Framework', 'Not found'),
+                "cms": headers.get('X-CMS', 'Not found')
+            }
+            results[protocol] = {"status": response.status_code, "headers": headers, "tech": tech}
+        except:
+            results[protocol] = {"error": "Connection failed"}
+    
+    print("\n\033[1;32m=== HTTP HEADER ANALYSIS ===\033[0m")
+    for proto, data in results.items():
+        print(f"\n  \033[1;36m{proto.upper()}:\033[0m")
+        if 'error' in data:
+            print(f"    └─ {data['error']}")
+        else:
+            print(f"    ├─ Status: {data['status']}")
+            print(f"    ├─ Server: {data['tech']['server']}")
+            print(f"    ├─ X-Powered-By: {data['tech']['powered_by']}")
+            print(f"    └─ Framework: {data['tech']['framework']}")
+    
+    return results
+
+# ========== 6. TRACEROUTE ==========
+def traceroute(target: str, max_hops=30) -> List[Dict]:
+    """Simple traceroute using ICMP or UDP."""
+    results = []
+    print(f"\n\033[1;33m[+] Tracing route to {target}...\033[0m")
+    
+    for ttl in range(1, max_hops+1):
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+            sock.setsockopt(socket.SOL_IP, socket.IP_TTL, ttl)
+            sock.settimeout(2)
+            sock.sendto(b"", (target, 33434))
+            data, addr = sock.recvfrom(1024)
+            results.append({"hop": ttl, "ip": addr[0], "rtt": "N/A"})
+            if addr[0] == target:
+                break
+        except socket.timeout:
+            results.append({"hop": ttl, "ip": "*", "rtt": "timeout"})
+        except:
+            break
+        finally:
+            sock.close()
+    
+    print("\n\033[1;32m=== TRACEROUTE RESULTS ===\033[0m")
+    for hop in results:
+        if hop['ip'] == '*':
+            print(f"  {hop['hop']:2}  {'*':15}  {hop['rtt']}")
+        else:
+            print(f"  {hop['hop']:2}  {hop['ip']:15}  {hop['rtt']}")
+    
+    return results
+
+# ========== 7. EMAIL/USERNAME OSINT ==========
+def email_osint(email: str) -> Dict:
+    """Basic email breach/association check."""
+    username, domain = email.split('@')
+    results = {
+        "username": username,
+        "domain": domain,
+        "possible_social": [
+            f"https://github.com/{username}",
+            f"https://twitter.com/{username}",
+            f"https://linkedin.com/in/{username}",
+            f"https://reddit.com/user/{username}",
+            f"https://instagram.com/{username}",
+            f"https://facebook.com/{username}"
+        ]
+    }
+    
+    print("\n\033[1;32m=== EMAIL OSINT RESULTS ===\033[0m")
+    print(f"  ├─ Username: {username}")
+    print(f"  ├─ Domain: {domain}")
+    print(f"  └─ Possible Social Media Profiles:")
+    for url in results['possible_social']:
+        print(f"      └─ {url}")
+    print(f"\n  [!] Check haveibeenpwned.com for breach data (no API key needed)")
+    
+    return results
+
+# ========== 8. BANNER GRABBING ==========
+def grab_banner(ip: str, port: int, timeout=3) -> Optional[str]:
+    """Grab service banner via socket."""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect((ip, port))
+        sock.send(b"\r\n")
+        banner = sock.recv(1024).decode(errors='ignore').strip()
+        sock.close()
+        return banner[:100]  # Limit banner length
+    except:
+        return None
+
+# ========== 9. GEOLOCATION ==========
+def ip_geolocation(ip: str) -> Dict:
+    """Get IP geolocation from ip-api.com (no key)."""
+    print("\n\033[1;33m[+] Fetching IP Geolocation...\033[0m")
+    try:
+        response = requests.get(f"http://ip-api.com/json/{ip}", timeout=5)
+        data = response.json()
+        if data['status'] == 'success':
+            result = {
+                "country": data['country'],
+                "region": data['regionName'],
+                "city": data['city'],
+                "isp": data['isp'],
+                "org": data['org'],
+                "lat": data['lat'],
+                "lon": data['lon']
+            }
+            print("\n\033[1;32m=== IP GEOLOCATION ===\033[0m")
+            for key, value in result.items():
+                print(f"  ├─ {key.capitalize()}: {value}")
+            return result
+    except:
+        pass
+    print("  └─ Geolocation unavailable")
+    return {"error": "Geolocation failed"}
+
+# ========== 10. NMAP PORT SCAN ==========
+def run_nmap_scan(ip: str, speed: str) -> Dict:
+    """Nmap port scan using ONLY the A record IP."""
+    if not NMAP_AVAILABLE:
+        print("  [!] python-nmap not installed. Skipping port scan.")
+        return {}
+    
+    nm = nmap.PortScanner()
+    if speed == "fast":
+        ports = "1-100"
+        arguments = "-sV --version-intensity 5 -T4"
+    elif speed == "moderate":
+        ports = "1-1000"
+        arguments = "-sV --version-intensity 7 -T4"
     else:
-        target = input(f"\n{Colors.GOLD}🔍 Enter target domain: {Colors.RESET}").strip()
+        ports = "1-65535"
+        arguments = "-sV -T4"
     
-    if not target:
-        print_color("❌ No target specified. Aborting.", Colors.RED)
-        sys.exit(1)
+    print(f"\n\033[1;33m[+] Scanning {ip} (ports: {ports}) - Speed: {speed}\033[0m")
     
-    # Authorization
-    print_color("\n⚖️  AUTHORIZATION PROTOCOL", Colors.BOLD + Colors.BRIGHT_RED)
-    print_color("⚠️  You must have explicit written permission to scan this target", Colors.YELLOW)
-    
-    if not prompt_yes_no(f"\n📝 Confirm authorization for {target}?", default=False):
-        print_color("\n❌ Authorization denied. Exiting.", Colors.RED)
-        sys.exit(1)
-    
-    print_color("✅ Authorization verified.", Colors.GREEN)
-    
-    # Module selection
-    modules = choose_modules()
-    
-    # Configuration
-    shodan_key = input(f"\n{Colors.BRIGHT_CYAN}🔑 Shodan API key (Enter to skip): {Colors.RESET}").strip() or None
-    default_nmap = "-sV -p- --max-retries 2 --host-timeout 30s"
-    nmap_args = input(f"{Colors.BRIGHT_CYAN}🔧 Nmap args (Enter for default): {Colors.RESET}").strip()
-    if not nmap_args:
-        nmap_args = default_nmap
-    
-    # Setup output
-    results_base = ensure_results_dir()
-    target_dir = next_target_dir(results_base, target)
-    
-    print_color(f"\n📁 Results will be stored in: {target_dir}", Colors.CYAN)
-    
-    # Initialize and run
-    suite = ReconSuite(target=target, shodan_key=shodan_key, nmap_args=nmap_args)
-    progress = ProgressTracker(len(modules))
-    
-    print_color("\n🚀 Starting reconnaissance...\n", Colors.GOLD)
-    start_time = time.time()
+    with tqdm(total=100, desc="Nmap progress", unit="%") as pbar:
+        def callback(host, scan_result, *args):
+            if 'progress' in scan_result:
+                pbar.n = int(scan_result['progress'])
+                pbar.refresh()
+        try:
+            nm.scan(hosts=ip, ports=ports, arguments=arguments, callback=callback)
+        except:
+            nm.scan(hosts=ip, ports=ports, arguments=arguments)
     
     results = {}
-    for module in modules:
-        module_result = run_module_with_progress(suite, module, progress)
-        results.update(module_result)
+    for host in nm.all_hosts():
+        for proto in nm[host].all_protocols():
+            for port in nm[host][proto].keys():
+                if nm[host][proto][port]['state'] == 'open':
+                    service = nm[host][proto][port].get('name', 'unknown')
+                    banner = grab_banner(ip, port)
+                    results[port] = {"service": service, "banner": banner}
     
-    progress.finish()
-    elapsed_time = time.time() - start_time
+    print(f"\n\033[1;32m=== OPEN PORTS FOUND ({len(results)}) ===\033[0m")
+    for port, info in sorted(results.items())[:20]:  # Show first 20
+        banner = info['banner'][:50] if info['banner'] else 'No banner'
+        print(f"  ├─ Port {port}/tcp: {info['service']}")
+        print(f"  └─ Banner: {banner}")
     
-    # Display formatted results
-    format_cli_output(results, target)
+    if len(results) > 20:
+        print(f"  └─ ... and {len(results)-20} more ports")
     
-    # Generate and display summary
-    summary = generate_summary(results, target, elapsed_time)
-    display_summary(summary)
+    return results
+
+# ========== MENU SYSTEM ==========
+def display_menu():
+    """Display main menu."""
+    print("\n\033[1;35m╔══════════════════════════════════════════════════════════╗")
+    print("║                     SELECT OSINT MODULE                        ║")
+    print("╠══════════════════════════════════════════════════════════════╣")
+    print("║  1. Full DNS Enumeration (All Record Types)                   ║")
+    print("║  2. WHOIS Lookup                                              ║")
+    print("║  3. Reverse DNS (PTR Record)                                  ║")
+    print("║  4. Subdomain Enumeration                                     ║")
+    print("║  5. HTTP Header Grabbing                                      ║")
+    print("║  6. Traceroute                                                ║")
+    print("║  7. Email OSINT                                               ║")
+    print("║  8. IP Geolocation                                            ║")
+    print("║  9. Port Scan (Nmap - Uses A Record IP Only)                  ║")
+    print("║ 10. Run ALL Modules                                           ║")
+    print("║  0. Exit                                                      ║")
+    print("╚══════════════════════════════════════════════════════════════╝\033[0m")
+
+# ========== MAIN ORCHESTRATOR ==========
+def main():
+    clear_screen()
+    print_banner()
     
-    # Save detailed reports
-    json_path, txt_path, csv_path = save_detailed_report(results, target_dir, target, summary)
+    # Get target input
+    target = input("\033[1;36m[?] Enter domain or IP address: \033[0m").strip()
+    if not target:
+        print("[!] No target provided.")
+        sys.exit(1)
     
-    # Also save HTML report using the suite's method
-    html_path = os.path.join(target_dir, "report.html")
+    # Determine if domain or IP
+    is_ip = False
     try:
-        suite.save_output(results, html_path)
+        ipaddress.ip_address(target)
+        is_ip = True
+        ip = target
+        domain = None
+        print(f"\n\033[1;32m[+] Target is IP address: {ip}\033[0m")
     except:
-        # Fallback HTML
-        with open(html_path, 'w', encoding='utf-8') as f:
-            f.write(f"<!DOCTYPE html><html><head><title>ASETool Report - {target}</title></head>")
-            f.write(f"<body><h1>Reconnaissance Report: {target}</h1>")
-            f.write(f"<pre>{json.dumps(results, indent=2, default=str)}</pre></body></html>")
+        domain = target
+        try:
+            ip = socket.gethostbyname(domain)
+            print(f"\n\033[1;32m[+] Target resolved: {domain} -> {ip}\033[0m")
+        except:
+            print("[!] Could not resolve domain.")
+            sys.exit(1)
     
-    # Final output
-    print_color("\n" + "="*80, Colors.GOLD)
-    print_color("✅ MISSION COMPLETE", Colors.GREEN + Colors.BOLD)
-    print_color("="*80, Colors.GOLD)
-    print_color(f"\n📄 Reports saved in: {target_dir}", Colors.CYAN)
-    print_color(f"   • Complete JSON: {os.path.basename(json_path)}", Colors.SILVER)
-    print_color(f"   • Readable TXT: {os.path.basename(txt_path)}", Colors.SILVER)
-    print_color(f"   • Statistics CSV: {os.path.basename(csv_path)}", Colors.SILVER)
-    print_color(f"   • HTML Report: report.html", Colors.SILVER)
+    # Store all results
+    all_results = {}
     
-    print_color("\n💡 Tip: Check the readable_report.txt for a human-friendly overview\n", Colors.DIM)
-    
-    return 0
+    while True:
+        display_menu()
+        choice = input("\n\033[1;36m[?] Enter your choice (0-10): \033[0m").strip()
+        
+        if choice == '0':
+            print("\n\033[1;33m[!] Exiting ASETool. Stay ethical!\033[0m")
+            break
+        
+        elif choice == '1':
+            if domain:
+                all_results['dns'] = full_dns_lookup(domain)
+            else:
+                print("\n[!] DNS lookup only available for domains, not IP addresses.")
+        
+        elif choice == '2':
+            all_results['whois'] = whois_lookup(domain if domain else ip)
+        
+        elif choice == '3':
+            all_results['ptr'] = reverse_dns(ip)
+        
+        elif choice == '4':
+            if domain:
+                all_results['subdomains'] = subdomain_enum(domain)
+            else:
+                print("\n[!] Subdomain enumeration only available for domains.")
+        
+        elif choice == '5':
+            if domain:
+                all_results['http_headers'] = grab_http_headers(domain)
+            else:
+                print("\n[!] HTTP header grabbing only available for domains.")
+        
+        elif choice == '6':
+            all_results['traceroute'] = traceroute(ip)
+        
+        elif choice == '7':
+            email = input("[?] Enter email address to analyze: ").strip()
+            if email and '@' in email:
+                all_results['email_osint'] = email_osint(email)
+            else:
+                print("[!] Invalid email address.")
+        
+        elif choice == '8':
+            all_results['geo'] = ip_geolocation(ip)
+        
+        elif choice == '9':
+            print("\n\033[1;33m[+] Port Scan Speed Options:\033[0m")
+            print("  1. Fast (Top 100 ports)")
+            print("  2. Moderate (Top 1000 ports)")
+            print("  3. Slow (All 65535 ports)")
+            speed_choice = input("[?] Select speed (1/2/3): ").strip()
+            speed_map = {"1": "fast", "2": "moderate", "3": "slow"}
+            if speed_choice in speed_map:
+                all_results['ports'] = run_nmap_scan(ip, speed_map[speed_choice])
+            else:
+                print("[!] Invalid choice. Skipping scan.")
+        
+        elif choice == '10':
+            print("\n\033[1;33m[+] Running ALL modules... This may take a while.\033[0m")
+            
+            # Run all applicable modules
+            if domain:
+                all_results['dns'] = full_dns_lookup(domain)
+                all_results['subdomains'] = subdomain_enum(domain)
+                all_results['http_headers'] = grab_http_headers(domain)
+            
+            all_results['whois'] = whois_lookup(domain if domain else ip)
+            all_results['ptr'] = reverse_dns(ip)
+            all_results['traceroute'] = traceroute(ip)
+            all_results['geo'] = ip_geolocation(ip)
+            
+            # Email OSINT is optional, ask user
+            email_input = input("\n[?] Enter email for OSINT (or press Enter to skip): ").strip()
+            if email_input and '@' in email_input:
+                all_results['email_osint'] = email_osint(email_input)
+            
+            # Port scan
+            print("\n\033[1;33m[+] Port Scan Speed Options:\033[0m")
+            print("  1. Fast (Top 100 ports)")
+            print("  2. Moderate (Top 1000 ports)")
+            print("  3. Slow (All 65535 ports)")
+            speed_choice = input("[?] Select speed (1/2/3): ").strip()
+            speed_map = {"1": "fast", "2": "moderate", "3": "slow"}
+            if speed_choice in speed_map:
+                all_results['ports'] = run_nmap_scan(ip, speed_map[speed_choice])
+            
+            # Final Summary
+            print("\n" + "="*70)
+            print("\033[1;32m╔══════════════════════════════════════════════════════════════╗")
+            print("║                     FINAL SUMMARY & CONCLUSION                       ║")
+            print("╚══════════════════════════════════════════════════════════════════╝\033[0m")
+            print(f"\n  \033[1;36mTarget:\033[0m {target}")
+            print(f"  \033[1;36mIP Address:\033[0m {ip}")
+            
+            if 'dns' in all_results:
+                total_records = sum(len(v) for v in all_results['dns'].values())
+                print(f"  \033[1;36mDNS Records Found:\033[0m {total_records}")
+            
+            if 'subdomains' in all_results:
+                print(f"  \033[1;36mSubdomains Discovered:\033[0m {len(all_results['subdomains'])}")
+            
+            if 'ports' in all_results:
+                print(f"  \033[1;36mOpen Ports Found:\033[0m {len(all_results['ports'])}")
+            
+            if 'geo' in all_results and 'error' not in all_results['geo']:
+                print(f"  \033[1;36mLocation:\033[0m {all_results['geo'].get('city')}, {all_results['geo'].get('country')}")
+            
+            print("\n\033[1;33m[!] EDUCATIONAL USE ONLY\033[0m")
+            print("This tool is for authorized security training and OSINT research.")
+            print("Always ensure you have permission before scanning or enumerating any target.")
+            
+            print("\n\033[1;32mConclusion:\033[0m ASETool provides complete OSINT capabilities without API keys,")
+            print("including DNS enumeration, WHOIS, subdomain discovery, header grabbing,")
+            print("traceroute, geolocation, and optional port scanning. Perfect for educational")
+            print("purposes and understanding open-source intelligence techniques.\n")
+            
+            input("\n[?] Press Enter to continue...")
+            clear_screen()
+            print_banner()
+            continue
+        
+        else:
+            print("\n[!] Invalid choice. Please select 0-10.")
+        
+        input("\n[?] Press Enter to continue...")
+        clear_screen()
+        print_banner()
+        if domain:
+            print(f"\n\033[1;32m[+] Target: {domain} -> {ip}\033[0m")
+        else:
+            print(f"\n\033[1;32m[+] Target: {ip}\033[0m")
 
 if __name__ == "__main__":
     try:
-        sys.exit(main())
+        main()
     except KeyboardInterrupt:
-        print_color("\n\n⚠️ Scan interrupted by user", Colors.YELLOW)
-        sys.exit(1)
+        print("\n\n[!] Interrupted by user. Exiting...")
+        sys.exit(0)
     except Exception as e:
-        print_color(f"\n❌ Unexpected error: {str(e)}", Colors.RED)
+        print(f"\n[!] Unexpected error: {e}")
         sys.exit(1)

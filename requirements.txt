@@ -1,10 +1,28 @@
-requests>=2.28
-dnspython>=2.3
-python-whois>=0.7
-beautifulsoup4>=4.12
-urllib3>=1.26
-tqdm>=4.65
-nmap>=0.7.1
-shodan>=1.27.0
-Jinja2>=3.1
-wappalyzer-python>=0.4.0
+# ASETool - Required Python Packages
+# Install all dependencies using: pip install -r requirements.txt
+
+# Core DNS resolution
+dnspython>=2.3.0
+
+# WHOIS lookup
+python-whois>=0.8.0
+
+# HTTP requests and header grabbing
+requests>=2.31.0
+
+# Progress bars for long operations
+tqdm>=4.66.0
+
+# Nmap integration (port scanning)
+python-nmap>=0.7.1
+
+# Cryptography for SSL/TLS certificate analysis (optional but recommended)
+cryptography>=41.0.0
+pyOpenSSL>=23.2.0
+
+# Note: Nmap system package is also required
+# Install Nmap from: https://nmap.org/download.html
+# Or use your system's package manager:
+#   - Ubuntu/Debian: sudo apt install nmap
+#   - macOS: brew install nmap
+#   - Windows: Download installer from nmap.org

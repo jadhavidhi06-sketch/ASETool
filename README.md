@@ -1,93 +1,53 @@
-<!-- README.md - GitHub will render this natively -->
+<div align="center">
 
-# 🔍 ASERecon v3.0 - Advanced CLI Security Tool
+# 🔐 ASETool - Advanced Security Enumeration Tool
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Security-Testing-red" alt="Security Testing">
-  <img src="https://img.shields.io/badge/OSINT-Collection-blue" alt="OSINT">
-  <img src="https://img.shields.io/badge/Python-3.7+-green.svg" alt="Python">
-  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
-</p>
+### *Complete OSINT & Network Reconnaissance Suite*
 
-> # ⚠️ EDUCATIONAL PURPOSE ONLY
-> 
-> **CRITICAL LEGAL NOTICE:** This tool is designed SOLELY for authorized penetration testing, 
-> educational security research, and system administrators auditing their own infrastructure.
-> 
-> You MUST have EXPLICIT WRITTEN AUTHORIZATION before using this tool on any system you do not own.
-> Unauthorized use may violate the Computer Fraud and Abuse Act (CFAA), GDPR, HIPAA, PCI DSS, 
-> and other applicable laws. Violators face CRIMINAL PROSECUTION, FINES, and IMPRISONMENT.
+[![License](https://img.shields.io/badge/License-Educational%20Only-red)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://python.org)
+[![OSINT](https://img.shields.io/badge/Category-OSINT-green)](https://osintframework.com)
+[![No API Keys](https://img.shields.io/badge/No%20API%20Keys-Required-brightgreen)]()
+
+</div>
 
 ---
 
-## 📋 Table of Contents
+## 🎯 Overview
 
-- [Features](#-features)
-- [Quick Start](#-quick-start)
-- [Installation](#-installation)
-- [Usage Examples](#-usage-examples)
-- [Command Line Options](#-command-line-options)
-- [Risk Scoring](#-risk-scoring)
-- [Shodan Integration](#-shodan-integration)
-- [Legal Guidelines](#-legal-guidelines)
-- [FAQ](#-frequently-asked-questions)
+**ASETool** is a comprehensive, educational OSINT (Open Source Intelligence) and network reconnaissance tool that requires **NO API KEYS**. It's designed for security professionals, students, and researchers to understand how publicly available information can be gathered and analyzed.
+
+### 🌟 Key Features
+
+| Category | Features |
+|----------|----------|
+| **DNS Enumeration** | A, AAAA, MX, NS, TXT, SOA, CNAME, PTR, SPF, DMARC |
+| **Domain Intelligence** | WHOIS lookup, Subdomain discovery, Reverse DNS |
+| **Network Analysis** | Traceroute, IP Geolocation, Port Scanning (Nmap) |
+| **Web Intelligence** | HTTP Header grabbing, Technology fingerprinting |
+| **Person OSINT** | Email analysis, Social media discovery |
+| **User Experience** | Interactive menu, Progress bars, Colorized output |
 
 ---
 
 ## 🚀 Quick Start
 
+### Installation (3 Steps)
+
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/aserecon.git
-cd aserecon
+# 1. Clone or download ASETool
+git clone https://github.com/yourusername/ASETool.git
+cd ASETool
 
-# Install dependencies
+# 2. Install Python dependencies
 pip install -r requirements.txt
 
-# Basic scan (no API key required)
-python asetool.py -t example.com
+# 3. Install Nmap (system package)
+# Ubuntu/Debian:
+sudo apt install nmap
+# macOS:
+brew install nmap
+# Windows: Download from https://nmap.org/download.html
 
-# Full scan with Shodan
-python asetool.py -t example.com -s YOUR_SHODAN_API_KEY
-
-# View help
-python asetool.py -h
-
-
-asetool - Authorized Recon Suite
-
-Install:
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-Generate compressed subdomain wordlist (one-time):
-mkdir -p reconsuite/data
-python3 - <<'PY'
-import gzip
-common = ["www","mail","ns","smtp","api","dev","test","stage","staging","beta","portal","admin","secure","webmail","shop","blog","billing","m","cdn","img","static","assets","ftp","old","vpn","owa","db","git","jira","confluence","support","status","help","docs","payments","auth","accounts","crm","intranet","remote","sys","monitor","ops","backup","cache","gateway"]
-words=[]
-for w in common:
-    words.append(w)
-for i in range(1,5000):
-    words.append(f"app{i}")
-for i in range(1,3000):
-    words.append(f"srv{i}")
-for i in range(1,2000):
-    words.append(f"web{i}")
-words = list(dict.fromkeys(words))[:10000]
-with gzip.open("reconsuite/data/subdomains.txt.gz","wt",encoding="utf-8") as f:
-    for w in words:
-        f.write(w+"\\n")
-print("wrote", len(words))
-PY
-
-Run:
-python asetool.py
-or
-python asetool.py example.com
-
-Notes:
-- Use only on targets you own or have explicit permission to test.
-- Install system tools (nmap, theHarvester) for full features.
-- Results saved under ./results/<target> (numbered if reused).
+# 4. Run the tool
+python ASETool.py
