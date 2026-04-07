@@ -12,42 +12,88 @@ try:
 except Exception:
     CURSES_AVAILABLE = False
 
-# Polished banner: uses ANSI sequences, fills terminal width where possible
+# Cinematic banner with ASETool branding
 def make_banner():
     cols = 80
     try:
         cols = os.get_terminal_size().columns
-        cols = max(60, min(cols, 120))
+        cols = max(80, min(cols, 140))
     except Exception:
         cols = 80
-
+    
+    # Cinematic ASCII art with ASETool
     title_lines = [
-        r"   ___    ____  _______   ____  ____",
-        r"  / _ |  / __ \/ ___/ /  / __ \/ __ \ ",
-        r" / __ | / /_/ /\__ \/ /__/ /_/ / /_/ /",
-        r"/_/ |_| \____/___/ /____/\____/\____/ ",
+        r"    █████╗ ███████╗ ███████╗████████╗ ██████╗  ██████╗ ██╗     ",
+        r"   ██╔══██╗██╔════╝ ██╔════╝╚══██╔══╝██╔═══██╗██╔═══██╗██║     ",
+        r"   ███████║███████╗ █████╗     ██║   ██║   ██║██║   ██║██║     ",
+        r"   ██╔══██║╚════██║ ██╔══╝     ██║   ██║   ██║██║   ██║██║     ",
+        r"   ██║  ██║║███████║███████╗   ██║   ╚██████╔╝╚██████╔╝███████╗",
+        r"   ╚═╝  ╚═╝╝╚══════╝╚══════╝   ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝",
+        r"",
     ]
-    subtitle = "AS E-Tool — Authorized Recon Suite"
-    tagline = "Fast. Focused. Responsible."
-
-    # center the ASCII art
-    art = "\n".join(line.center(cols) for line in title_lines)
-    subtitle_line = subtitle.center(cols)
-    tag_line = tagline.center(cols)
-
-    # color blocks
-    cyan = "\033[1;36m"
-    yellow = "\033[1;33m"
-    green = "\033[1;32m"
-    reset = "\033[0m"
-
-    banner = "\n".join([
-        cyan + art + reset,
-        yellow + subtitle_line + reset,
-        green + tag_line + reset,
-    ])
-    wrapper = "\n" + banner + "\n"
-    return wrapper
+    
+    # Dynamic subtitle and tagline
+    subtitle = "⚡ ADVANCED SECURITY EVALUATION TOOLKIT ⚡"
+    tagline = "Precision Reconnaissance • Ethical Intelligence • Professional Grade"
+    version = "v2.0.0"
+    
+    # Calculate center positions
+    art_width = max(len(line) for line in title_lines)
+    start_col = (cols - art_width) // 2 if art_width < cols else 0
+    
+    # ANSI color codes for cinematic feel
+    colors = {
+        'red': '\033[38;2;255;0;85m',
+        'cyan': '\033[38;2;0;255;255m',
+        'gold': '\033[38;2;255;215;0m',
+        'silver': '\033[38;2;192;192;192m',
+        'dark_red': '\033[38;2;139;0;0m',
+        'reset': '\033[0m',
+        'bold': '\033[1m',
+        'dim': '\033[2m',
+    }
+    
+    # Create gradient effect for ASCII art
+    gradient_lines = []
+    for i, line in enumerate(title_lines):
+        # Alternate colors for dramatic effect
+        if i < 6:  # First logo
+            if i % 2 == 0:
+                color = colors['cyan']
+            else:
+                color = colors['gold']
+        else:  # Second part "ETOOL"
+            if i % 2 == 0:
+                color = colors['red']
+            else:
+                color = colors['silver']
+        
+        spaced_line = ' ' * start_col + line
+        gradient_lines.append(color + spaced_line + colors['reset'])
+    
+    # Cinematic border
+    border = colors['dark_red'] + "═" * cols + colors['reset']
+    thin_border = colors['dim'] + "─" * cols + colors['reset']
+    
+    # Assemble banner with cinematic formatting
+    banner_parts = [
+        border,
+        "",
+        *gradient_lines,
+        "",
+        colors['bold'] + colors['gold'] + subtitle.center(cols) + colors['reset'],
+        colors['silver'] + tagline.center(cols) + colors['reset'],
+        "",
+        colors['dim'] + version.center(cols) + colors['reset'],
+        thin_border,
+    ]
+    
+    # Add some cinematic sparkle (stars at corners)
+    banner_parts.insert(1, colors['gold'] + "✨" + " " * (cols - 2) + "✨" + colors['reset'])
+    banner_parts.append(colors['gold'] + "✨" + " " * (cols - 2) + "✨" + colors['reset'])
+    banner_parts.append(border)
+    
+    return "\n".join(banner_parts)
 
 BANNER = make_banner()
 
@@ -77,11 +123,17 @@ def choose_modules():
         chosen = run_curses_menu(DEFAULT_MODULES)
         if chosen:
             return chosen
-    print("\nAvailable modules:")
+    print("\n📋 Available Modules:")
+    print("  " + "─" * 50)
     for i, m in enumerate(DEFAULT_MODULES, 1):
-        print(f"  {i}. {m}")
-    print("  0. all")
-    sel = input("\nEnter module numbers separated by comma (e.g. 1,3,5) or 0 for all: ").strip()
+        print(f"  {i:2}. {m:12}", end="  ")
+        if i % 3 == 0:
+            print()
+    if len(DEFAULT_MODULES) % 3 != 0:
+        print()
+    print("  " + "─" * 50)
+    print("  0. ALL modules (full reconnaissance)")
+    sel = input("\n🎯 Enter module numbers separated by comma (e.g. 1,3,5) or 0 for all: ").strip()
     if sel in ("0", "all", "0."):
         return DEFAULT_MODULES
     nums = [s.strip() for s in sel.split(",") if s.strip().isdigit()]
@@ -99,41 +151,77 @@ def prompt_yes_no(prompt, default=False):
         return True
     return ans in ("y", "yes")
 
+def print_cinematic_header(text, color_code='\033[38;2;255;215;0m'):
+    """Print a cinematic styled header"""
+    cols = 80
+    try:
+        cols = os.get_terminal_size().columns
+    except:
+        pass
+    
+    reset = '\033[0m'
+    border = "═" * cols
+    print(f"\n{color_code}{border}{reset}")
+    print(f"{color_code}{text.center(cols)}{reset}")
+    print(f"{color_code}{border}{reset}\n")
+
 def main():
     print(BANNER)
+    
+    # Cinematic intro effect
+    print("\033[38;2;255;215;0m" + "🎬 INITIALIZING RECONNAISSANCE SEQUENCE...".center(80) + "\033[0m")
+    
     # Get target
     if len(sys.argv) > 1:
         target = sys.argv[1]
+        print(f"\033[38;2;0;255;255m🎯 TARGET SPECIFIED: {target}\033[0m")
     else:
-        target = input("Target domain (e.g., example.com): ").strip()
+        target = input("\n\033[38;2;255;215;0m🔍 Enter target domain (e.g., example.com): \033[0m").strip()
+    
     if not target:
-        print("No target specified. Exiting.")
+        print("\033[38;2;255;0;85m❌ No target specified. Aborting mission.\033[0m")
         sys.exit(1)
-
-    print("\nAuthorization required: You must have explicit written permission to scan the target.")
-    if not prompt_yes_no(f"Do you confirm you have authorization to scan {target}?", default=False):
-        print("Authorization not confirmed. Exiting.")
+    
+    # Authorization check with cinematic styling
+    print_cinematic_header("⚖️  AUTHORIZATION PROTOCOL  ⚖️", '\033[38;2;255;0;85m')
+    print("\033[38;2;192;192;192m⚠️  LEGAL REQUIREMENT: You must have explicit written permission to scan the target.\033[0m")
+    print(f"\033[38;2;255;215;0m🎯 Target: {target}\033[0m")
+    
+    if not prompt_yes_no(f"\n📝 Do you confirm you have authorization to scan {target}?", default=False):
+        print("\n\033[38;2;255;0;85m❌ Authorization not confirmed. Terminating session.\033[0m")
         sys.exit(1)
-
+    
+    print("\n\033[38;2;0;255;0m✅ Authorization verified. Proceeding with reconnaissance.\033[0m")
+    
     modules = choose_modules()
-    shodan_key = input("Shodan API key (press Enter to skip): ").strip() or None
+    
+    shodan_key = input("\n\033[38;2;0;255;255m🔑 Shodan API key (press Enter to skip): \033[0m").strip() or None
+    if shodan_key:
+        print("\033[38;2;0;255;0m✓ Shodan integration enabled\033[0m")
+    
     default_nmap = "-sV -p- --max-retries 2 --host-timeout 30s"
-    nmap_args = input(f"nmap args (press Enter for default '{default_nmap}'): ").strip()
+    nmap_args = input(f"\033[38;2;0;255;255m🔧 nmap args (press Enter for default '{default_nmap}'): \033[0m").strip()
     if not nmap_args:
         nmap_args = default_nmap
-
+    
     results_base = ensure_results_dir()
     target_dir = next_target_dir(results_base, target)
-
-    print(f"\nResults will be stored in: {target_dir}\n")
-
+    
+    print_cinematic_header("📁 OUTPUT DIRECTORY", '\033[38;2;0;255;255m')
+    print(f"📂 {target_dir}\n")
+    
+    print_cinematic_header("🚀 EXECUTING MODULES", '\033[38;2;0;255;255m')
+    print(f"📋 Modules loaded: {', '.join(modules)}")
+    print(f"🔧 Nmap arguments: {nmap_args}\n")
+    
     suite = ReconSuite(target=target, shodan_key=shodan_key, nmap_args=nmap_args)
-    print("Running modules:", ", ".join(modules))
+    print("\033[38;2;0;255;255m⚡ Running reconnaissance modules...\033[0m\n")
+    
     report = suite.run_modules(modules)
-
+    
     json_path = os.path.join(target_dir, "report.json")
     suite.save_output(report, json_path)
-
+    
     # move HTML if saved next to JSON
     html_src = json_path.replace(".json", ".html")
     html_dst = os.path.join(target_dir, "report.html")
@@ -150,13 +238,32 @@ def main():
                 import json, html as _html
                 body = "<pre>" + _html.escape(json.dumps(report, indent=2)) + "</pre>"
                 with open(html_dst, "w", encoding="utf-8") as fh:
-                    fh.write(f"<!doctype html><html><head><meta charset='utf-8'><title>Report</title></head><body>{body}</body></html>")
+                    fh.write(f"<!doctype html><html><head><meta charset='utf-8'><title>ASETool Report - {target}</title></head><body>{body}</body></html>")
             except Exception:
                 pass
-
-    print("\nScan complete.")
-    print("Saved JSON:", json_path)
-    print("Saved HTML :", html_dst)
+    
+    # Cinematic completion screen
+    print_cinematic_header("✅ MISSION COMPLETE", '\033[38;2;0;255;0m')
+    print(f"\033[38;2;0;255;255m📊 JSON Report:   \033[38;2;192;192;192m{json_path}\033[0m")
+    print(f"\033[38;2;0;255;255m🌐 HTML Report:   \033[38;2;192;192;192m{html_dst}\033[0m")
+    print(f"\033[38;2;0;255;255m📁 Results Directory: \033[38;2;192;192;192m{target_dir}\033[0m")
+    
+    # ASCII art completion
+    completion_art = r"""
+    ╔══════════════════════════════════════════════════════════════╗
+    ║                                                              ║
+    ║   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   ║
+    ║   ░█▀▀░█▀█░█▀▄░█▀▀░█░█░░░█▀▀░█▀█░█▄█░█▀█░█░░░█▀▀░▀█▀░█▀▀░   ║
+    ║   ░█░░░█░█░█░█░█▀▀░▄▀▄░░░█░░░█░█░█░█░█▀▀░█░░░█▀▀░░█░░█▀▀░   ║
+    ║   ░▀▀▀░▀▀▀░▀▀░░▀▀▀░▀░▀░░░▀▀▀░▀▀▀░▀░▀░▀░░░▀▀▀░▀▀▀░░▀░░▀▀▀░   ║
+    ║   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   ║
+    ║                                                              ║
+    ║              🎯 RECONNAISSANCE SUCCESSFUL 🎯                 ║
+    ║                                                              ║
+    ╚══════════════════════════════════════════════════════════════╝
+    """
+    print("\033[38;2;0;255;255m" + completion_art + "\033[0m")
+    
     return 0
 
 if __name__ == "__main__":
